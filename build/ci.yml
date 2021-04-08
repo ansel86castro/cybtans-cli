@@ -86,7 +86,7 @@ jobs:
           Destination: "AzureBlob"
           storage: "cybtans"
           ContainerName: "cybtans-cli"
-          blobPrefix: "x64/"
+          blobPrefix: "cybtans-cli_x64.zip"
 
       - task: AzureFileCopy@4
         displayName: "Upload to Blob Storage"
@@ -96,4 +96,4 @@ jobs:
           Destination: "AzureBlob"
           storage: "cybtans"
           ContainerName: "cybtans-cli"
-          blobPrefix: "portable/"
+          blobPrefix: "cytabs-cli_portable.zip"
