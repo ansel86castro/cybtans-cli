@@ -82,7 +82,7 @@ jobs:
       - task: ArchiveFiles@2
         displayName: "Zip Mac"
         inputs:
-          rootFolderOrFile: "Release/mac"
+          rootFolderOrFile: "Release/mac/cybtans-cli"
           includeRootFolder: false
           archiveType: "zip"
           archiveFile: "$(Build.ArtifactStagingDirectory)/mac/cybtans-cli.zip"
