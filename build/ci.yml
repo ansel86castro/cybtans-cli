@@ -17,7 +17,7 @@ trigger:
   batch: true
   branches:
     include:
-      - main
+      - develop
 
 jobs:
   - job: PR
