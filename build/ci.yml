@@ -57,6 +57,7 @@ jobs:
           script: |
             dotnet publish src/Cybtans.Proto.Generator/Cybtans.Proto.Generator.csproj -p:PublishProfile=Winx64 -o Release/x64
             dotnet publish src/Cybtans.Proto.Generator/Cybtans.Proto.Generator.csproj -p:PublishProfile=Portable -o Release/portable
+            dotnet publish src/Cybtans.Proto.Generator/Cybtans.Proto.Generator.csproj -p:PublishProfile=Mac -o Release/mac
 
       - task: ArchiveFiles@2
         displayName: "Zip x64"
@@ -66,7 +67,7 @@ jobs:
           archiveType: "zip"
           archiveFile: "$(Build.ArtifactStagingDirectory)/x64/cybtans-cli.zip"
           replaceExistingArchive: true
-          verbose: true
+          verbose: false
 
       - task: ArchiveFiles@2
         displayName: "Zip Portable"
@@ -76,10 +77,20 @@ jobs:
           archiveType: "zip"
           archiveFile: "$(Build.ArtifactStagingDirectory)/portable/cybtans-cli.zip"
           replaceExistingArchive: true
-          verbose: true
+          verbose: false
+      
+      - task: ArchiveFiles@2
+        displayName: "Zip Mac"
+        inputs:
+          rootFolderOrFile: "Release/mac"
+          includeRootFolder: false
+          archiveType: "zip"
+          archiveFile: "$(Build.ArtifactStagingDirectory)/mac/cybtans-cli.zip"
+          replaceExistingArchive: true
+          verbose: false
 
       - task: AzureFileCopy@4
-        displayName: "Upload to Blob Storage"
+        displayName: "Upload x64 to Blob Storage"
         inputs:
           SourcePath: "$(Build.ArtifactStagingDirectory)/x64/cybtans-cli.zip"
           azureSubscription: "Evaluación gratuita(e5d99fb9-0a00-4157-8a2f-e79ac9337a57)"
@@ -89,7 +100,7 @@ jobs:
           blobPrefix: "cybtans-cli_x64.zip"
 
       - task: AzureFileCopy@4
-        displayName: "Upload to Blob Storage"
+        displayName: "Upload portable to Blob Storage"
         inputs:
           SourcePath: "$(Build.ArtifactStagingDirectory)/portable/cybtans-cli.zip"
           azureSubscription: "Evaluación gratuita(e5d99fb9-0a00-4157-8a2f-e79ac9337a57)"
@@ -97,3 +108,13 @@ jobs:
           storage: "cybtans"
           ContainerName: "cybtans-cli"
           blobPrefix: "cytabs-cli_portable.zip"
+
+      - task: AzureFileCopy@4
+        displayName: "Upload mac to Blob Storage"
+        inputs:
+          SourcePath: "$(Build.ArtifactStagingDirectory)/mac/cybtans-cli.zip"
+          azureSubscription: "Evaluación gratuita(e5d99fb9-0a00-4157-8a2f-e79ac9337a57)"
+          Destination: "AzureBlob"
+          storage: "cybtans"
+          ContainerName: "cybtans-cli"
+          blobPrefix: "cytabs-cli_mac.zip"
