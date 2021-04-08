@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5</TargetFramework>
-    <AssemblyName>cybtans-cli5</AssemblyName>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>cybtans-cli</AssemblyName>
     <StartupObject></StartupObject>
     <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
     <Nullable>disable</Nullable>    
@@ -70,6 +70,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cybtans.Entities.Proto" Version="1.2.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup>

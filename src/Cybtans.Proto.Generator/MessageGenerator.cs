@@ -141,19 +141,20 @@ namespace Cybtans.Proto.Generator
 
             Console.WriteLine($"Generating proto from {options.AssemblyFilename}");
 
-            var assembly = Assembly.Load(File.ReadAllBytes(options.AssemblyFilename));
-            AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs args)
-            {
-                var i = args.Name.IndexOf(',');
-                var name = args.Name.Substring(0, i);
-                string assemplyPath = Path.Combine(loadAssemblyPath, name + ".dll");
-                if (!File.Exists(assemplyPath))
-                    return null;
+            //var assembly = Assembly.Load(File.ReadAllBytes(options.AssemblyFilename));
+            //AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs args)
+            //{
+            //    var i = args.Name.IndexOf(',');
+            //    var name = args.Name.Substring(0, i);
+            //    string assemplyPath = Path.Combine(loadAssemblyPath, name + ".dll");
+            //    if (!File.Exists(assemplyPath))
+            //        return null;
 
-                return Assembly.Load(File.ReadAllBytes(assemplyPath));
-            };
-
-            var types = GenerateMessages(options, assembly.ExportedTypes);
+            //    return Assembly.Load(File.ReadAllBytes(assemplyPath));
+            //};
+            var loader = new Cybtans.Proto.Utils.AssemblyLoader(options.AssemblyFilename);
+            var exportedTypes = loader.LoadTypes();
+            var types = GenerateMessages(options, exportedTypes);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Proto generated at {options.ProtoOutputFilename}");
