@@ -381,8 +381,7 @@ namespace Cybtans.Proto.Generator
             if (attr == null || generated.Contains(type))
                 return;           
 
-            generated.Add(type);
-            visited.Add(type);
+            generated.Add(type);          
 
             codeWriter.Append($"message { GetTypeName(type, options) } {{");
             codeWriter.AppendLine();
@@ -408,7 +407,7 @@ namespace Cybtans.Proto.Generator
 
             var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var counter = 1;
-            List<Type> types = new List<Type>();
+            List<Type> types = new();
 
             foreach (var p in props)
             {
@@ -475,6 +474,8 @@ namespace Cybtans.Proto.Generator
 
             codeWriter.Append("}");
             codeWriter.AppendLine(2);
+
+            visited.Add(type);
 
             foreach (var t in types)
             {

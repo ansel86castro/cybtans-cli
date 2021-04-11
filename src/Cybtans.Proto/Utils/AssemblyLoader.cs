@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Newtonsoft;
 using Newtonsoft.Json;
@@ -56,7 +57,7 @@ namespace Cybtans.Proto.Utils
                 var pkValue = (JObject)pk.Value;
                 if (pkValue.ContainsKey("runtime"))
                 {
-                    foreach (var p in pkValue.Properties())
+                    foreach (var p in ((JObject)pkValue["runtime"]).Properties())
                     {
                         var value = (JObject)p.Value;
                         if (value.ContainsKey("assemblyVersion"))
@@ -104,7 +105,7 @@ namespace Cybtans.Proto.Utils
         {
             var split = args.Name.Split(",");            
             var name = split[0];
-            var version = split[1];
+            var version = split[1].Split("=")[1];
 
             if(!_packageInfos.TryGetValue($"{name}", out var pi) || !pi.Runtimes.ContainsKey(version))
             {
