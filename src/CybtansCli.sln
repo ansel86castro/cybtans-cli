@@ -1,13 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybtans.Proto", "Cybtans.Proto\Cybtans.Proto.csproj", "{3A530ABC-87A3-499F-B319-BDDE0BFB8372}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cybtans.Proto", "Cybtans.Proto\Cybtans.Proto.csproj", "{3A530ABC-87A3-499F-B319-BDDE0BFB8372}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybtans.Proto.Generator", "Cybtans.Proto.Generator\Cybtans.Proto.Generator.csproj", "{9EEBFAE9-7A6D-49FB-B0D9-5B2C539FA725}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cybtans.Proto.Generator", "Cybtans.Proto.Generator\Cybtans.Proto.Generator.csproj", "{9EEBFAE9-7A6D-49FB-B0D9-5B2C539FA725}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybtans.Proto.Test", "Cybtans.Proto.Test\Cybtans.Proto.Test.csproj", "{22F48CCA-D4C0-483E-95DD-A9CA3F003B61}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cybtans.Proto.Test", "Cybtans.Proto.Test\Cybtans.Proto.Test.csproj", "{22F48CCA-D4C0-483E-95DD-A9CA3F003B61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybtans.Licensing", "Cybtans.Licensing\Cybtans.Licensing.csproj", "{AA974C74-8B4C-4869-841C-C84496C6AEE6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cybtans.Licensing.Services", "Cybtans.Licensing.Services\Cybtans.Licensing.Services.csproj", "{013210AF-5B58-4E50-81BE-00B6E0DD76E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,9 +21,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3A530ABC-87A3-499F-B319-BDDE0BFB8372}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -58,5 +59,35 @@ Global
 		{22F48CCA-D4C0-483E-95DD-A9CA3F003B61}.Release|x64.Build.0 = Release|Any CPU
 		{22F48CCA-D4C0-483E-95DD-A9CA3F003B61}.Release|x86.ActiveCfg = Release|Any CPU
 		{22F48CCA-D4C0-483E-95DD-A9CA3F003B61}.Release|x86.Build.0 = Release|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Debug|x64.Build.0 = Debug|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Debug|x86.Build.0 = Debug|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Release|x64.ActiveCfg = Release|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Release|x64.Build.0 = Release|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Release|x86.ActiveCfg = Release|Any CPU
+		{AA974C74-8B4C-4869-841C-C84496C6AEE6}.Release|x86.Build.0 = Release|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Debug|x64.Build.0 = Debug|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Debug|x86.Build.0 = Debug|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Release|x64.ActiveCfg = Release|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Release|x64.Build.0 = Release|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Release|x86.ActiveCfg = Release|Any CPU
+		{013210AF-5B58-4E50-81BE-00B6E0DD76E4}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CD5BD0F3-B744-4FCF-A82B-0D511311173B}
 	EndGlobalSection
 EndGlobal

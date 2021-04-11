@@ -1,5 +1,9 @@
 {
   "profiles": {
+    "Cybtans.Proto.Generator": {
+      "commandName": "Project",
+      
+    },
     "Cybtans.ProjectGenerator": {
       "commandName": "Project",
       "commandLineArgs": "service -n Service1 -o Services/Service1"
@@ -22,7 +26,7 @@
     },
     "Cybtans.CodeGeneratorConfigs": {
       "commandName": "Project",
-      "commandLineArgs": "D:\\Projects\\CybtansSDK\\cybtans-sdk\\CybtansSDK\\Tests"
+      "commandLineArgs": "D:\\Projects\\Kaplan\\Repos\\KT.CareerDocuments.Service\\src\\KT.CareerDocuments.Service.Definition"
     }
   }
 }

@@ -80,7 +80,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Cybtans.Licensing.Services\Cybtans.Licensing.Services.csproj" />
     <ProjectReference Include="..\Cybtans.Proto\Cybtans.Proto.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="config.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 

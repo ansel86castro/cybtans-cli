@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Cybtans.Licensing": {
+      "commandName": "Project",
+      "commandLineArgs": "crypto -f ../../../../Cybtans.Proto.Generator/config.json -o ../../../../Cybtans.Proto.Generator/config.dat"
+    },
+    "Cybtans.Licensing.CreateLicense": {
+      "commandName": "Project",
+      "commandLineArgs": "lic create -date 2021-04-10 -duration 30 -o ../../../../Cybtans.Proto.Generator/license.lic"
+    }
+  }
+}
