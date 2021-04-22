@@ -81,7 +81,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cybtans.Proto\Cybtans.Proto.csproj" />
-  </ItemGroup>
+  </ItemGroup>  
 
   <ItemGroup>
     <None Update="config.dat">
