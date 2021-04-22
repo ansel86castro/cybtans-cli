@@ -745,7 +745,7 @@ namespace Cybtans.Proto.Generator
                     if (!IsGenerated(elementType))
                         continue;
 
-                    var selector = ConvertToRest("x", elementType, options);
+                    var selector = ConvertToPoco("x", elementType, options);
                     if (selector == "x")
                     {
                         bodyWriter.Append($"result.{fieldName} = model.{fieldName}.ToList();").AppendLine();
@@ -760,7 +760,7 @@ namespace Cybtans.Proto.Generator
                     if (!IsGenerated(fieldType))
                         continue;
 
-                    var path = ConvertToRest($"model.{fieldName}", fieldType, options);
+                    var path = ConvertToPoco($"model.{fieldName}", fieldType, options);
                     bodyWriter.Append($"result.{fieldName} = {path};").AppendLine();
                 }
             }
@@ -827,7 +827,7 @@ namespace Cybtans.Proto.Generator
             }
         }
 
-        private string ConvertToRest(string fieldName, Type type, GrpcCompatibility options)
+        private string ConvertToPoco(string fieldName, Type type, GrpcCompatibility options)
         {
             if (type == typeof(DateTime))
             {

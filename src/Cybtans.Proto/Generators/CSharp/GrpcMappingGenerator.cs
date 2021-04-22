@@ -174,7 +174,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 if (field.Type.IsArray)
                 {                  
-                    var selector = ConvertToRest("x", fieldType);
+                    var selector = ConvertToPoco("x", fieldType);
                     if (selector == "x")
                     {
                         bodyWriter.Append($"result.{fieldName} = model.{fieldName}.ToList();").AppendLine();
@@ -190,7 +190,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 }              
                 else
                 {
-                    var path = ConvertToRest($"model.{fieldName}", fieldType);
+                    var path = ConvertToPoco($"model.{fieldName}", fieldType);
                     bodyWriter.Append($"result.{fieldName} = {path};").AppendLine();
                 }
             }
@@ -204,19 +204,27 @@ namespace Cybtans.Proto.Generators.CSharp
         {
             if (PrimitiveType.TimeStamp == fieldType)
             {
-                return $"{fieldName}.HasValue ? Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime({fieldName}.Value): null";
+                return $"{fieldName}.HasValue ? Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.SpecifyKind({fieldName}.Value, DateTimeKind.Utc)) : null";
             }
             else if(PrimitiveType.Datetime == fieldType)
             {
-                return $"Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime({fieldName})";
+                return $"Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.SpecifyKind({fieldName}, DateTimeKind.Utc))";
             }
             else if (PrimitiveType.Duration == fieldType)
             {
-                return $"{fieldName}.HasValue ? Google.Protobuf.WellKnownTypes.Duration.FromTimeSpan({fieldName}.Value): null";
+                return $"{fieldName}.HasValue ? Google.Protobuf.WellKnownTypes.Duration.FromTimeSpan({fieldName}.Value.TimeOfDay) : null";
             }
-            else if (PrimitiveType.String.Equals(fieldType))
+            else if (PrimitiveType.StringValue == fieldType)
+            {
+                return $"{ fieldName}";
+            }
+            else if (PrimitiveType.String == fieldType)
             {                
                 return $"{ fieldName} ?? string.Empty";
+            }
+            else if(PrimitiveType.Bytes == fieldType)
+            {
+                return $"{fieldName} != null ? Google.Protobuf.ByteString.CopyFrom({fieldName}) : Google.Protobuf.ByteString.Empty";
             }
             else if (fieldType is MessageDeclaration)
             {
@@ -233,15 +241,15 @@ namespace Cybtans.Proto.Generators.CSharp
             }
         }
 
-        private string ConvertToRest(string fieldName, ITypeDeclaration fieldType)
+        private string ConvertToPoco(string fieldName, ITypeDeclaration fieldType)
         {
-            if (PrimitiveType.Datetime.Equals(fieldType))
+            if (PrimitiveType.TimeStamp == fieldType)
             {
                 return $"{fieldName}?.ToDateTime()";
-            }
+            }            
             else if (PrimitiveType.Duration.Equals(fieldType))
             {
-                return $"{fieldName}?.ToTimeSpan()";
+                return $"{fieldName} != null ? DateTime.UnixEpoch.Add({fieldName}.ToTimeSpan()) : new DateTime?()";
             }
             else if (fieldType is MessageDeclaration)
             {

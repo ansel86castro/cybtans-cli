@@ -16,11 +16,15 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public static string GetTypeName(this TypeIdentifier type)
         {
-            string name = type.TypeDeclaration.Name.Pascal();
+            string name;
 
             if (type.TypeDeclaration is PrimitiveType p)
             {
                 name = GetPrimitiveTypeName(p);
+            }
+            else
+            {
+                name = type.TypeDeclaration.Name.Pascal();
             }
 
             if (type.IsArray)
@@ -67,7 +71,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 case "decimal": return "decimal";
                 case "ByteStream": return "System.IO.Stream";
                 case "google.protobuf.Timestamp": return "DateTime?";
-                case "google.protobuf.Duration": return "TimeSpan?";
+                case "google.protobuf.Duration": return "DateTime?";
                 case "google.protobuf.Empty": return "void";
                 case "google.protobuf.BoolValue": return "bool?";
                 case "google.protobuf.DoubleValue": return "double?";
@@ -76,8 +80,8 @@ namespace Cybtans.Proto.Generators.CSharp
                 case "google.protobuf.Int64Value": return "long?";
                 case "google.protobuf.UInt32Value": return "uint?";                
                 case "google.protobuf.UInt64Value": return "ulong?";
-                case "google.protobuf.StringValue": return "string?";
-                case "google.protobuf.BytesValue": return "byte[]?";
+                case "google.protobuf.StringValue": return "string";
+                case "google.protobuf.BytesValue": return "byte[]";
 
             }
 
