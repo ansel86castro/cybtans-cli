@@ -81,16 +81,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cybtans.Proto\Cybtans.Proto.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="config.dat">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="config.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+  </ItemGroup>  
 
 
 </Project>
