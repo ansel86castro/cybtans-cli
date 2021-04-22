@@ -16,9 +16,7 @@ namespace Cybtans.Proto.Generator
             };
 
             try
-            {
-                Licencing.LicenseService.Verify();
-
+            {              
                 List<CybtansConfig> configs = null;
                 if (args == null || args.Length == 0)
                 {

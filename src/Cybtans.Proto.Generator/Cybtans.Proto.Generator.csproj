@@ -80,7 +80,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cybtans.Licensing.Services\Cybtans.Licensing.Services.csproj" />
     <ProjectReference Include="..\Cybtans.Proto\Cybtans.Proto.csproj" />
   </ItemGroup>
 
