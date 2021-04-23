@@ -12,6 +12,7 @@ variables:
   # semanticVersion counter is automatically incremented by one in each execution of pipeline
   # second parameter is seed value to reset to every time the referenced majorMinorPathVersion is changed
   buildVersion: $[counter(variables['majorMinorPathVersion'], 1)]
+  configuration: Release
 
 trigger:
   batch: true
