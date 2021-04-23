@@ -12,6 +12,7 @@ variables:
   # semanticVersion counter is automatically incremented by one in each execution of pipeline
   # second parameter is seed value to reset to every time the referenced majorMinorPathVersion is changed
   buildVersion: $[counter(variables['majorMinorPathVersion'], 1)]
+  configuration: Release
 
 trigger:
   batch: true
@@ -22,7 +23,7 @@ trigger:
 jobs:
   - job: PR
     displayName: Pull Request Validation
-    condition: eq(variables['Build.Reason'], 'PullRequest')
+    #condition: eq(variables['Build.Reason'], 'PullRequest')
     pool:
       vmImage: "windows-latest"
     steps:
@@ -78,7 +79,7 @@ jobs:
           archiveFile: "$(Build.ArtifactStagingDirectory)/portable/cybtans-cli.zip"
           replaceExistingArchive: true
           verbose: false
-      
+
       - task: ArchiveFiles@2
         displayName: "Zip Mac"
         inputs:
