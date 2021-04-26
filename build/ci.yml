@@ -19,6 +19,9 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - src/*
 
 jobs:
   - job: PR
