@@ -35,6 +35,9 @@ namespace Cybtans.Proto.Generators.CSharp
             {
                 if (item is EnumDeclaration e)
                 {
+                    if (e.DeclaringMessage != null)
+                        continue;
+
                     var info = new EnumInfo(e, _option, proto);
 
                     var writer = new CodeWriter();

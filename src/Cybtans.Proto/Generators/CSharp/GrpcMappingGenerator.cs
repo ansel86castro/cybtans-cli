@@ -77,7 +77,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var clsWriter = writer.Class;
 
-            clsWriter.Append("public static class GrpcMappingExtensions").AppendLine().Append("{").AppendLine();
+            clsWriter.Append("public static class ProtobufMappingExtensions").AppendLine().Append("{").AppendLine();
             clsWriter.Append('\t', 1);
 
             var bodyWriter = clsWriter.Block("BODY");
@@ -105,13 +105,13 @@ namespace Cybtans.Proto.Generators.CSharp
         private void GenerateModelToProtobufMapping(MessageDeclaration type, CodeWriter writer)
         {
             var proto = type.ProtoDeclaration;
-            var typeName = type.GetTypeName();
-            var grpcTypeName = $"{proto.Option.Namespace}.{type.GetProtobufName()}";
+            var typeName = type.GetFullTypeName();
+            var grpcTypeName = $"{proto.Option.CSharpNamespace}.{type.GetProtobufName()}";
 
             writer.Append($"public static global::{grpcTypeName} ToProtobufModel(this mds::{typeName} model)")
                 .AppendLine().Append("{").AppendLine().Append('\t', 1);
 
-            var bodyWriter = writer.Block($"ToProtobufModel_{type.Name}_BODY");
+            var bodyWriter = writer.Block($"ToProtobufModel_{typeName.Replace('.', '_')}_BODY");
 
             bodyWriter.Append($"if(model == null) return null;").AppendLine(2);
 
@@ -155,13 +155,13 @@ namespace Cybtans.Proto.Generators.CSharp
         private void GenerateProtobufToPocoMapping(MessageDeclaration type, CodeWriter writer)
         {
             var proto = type.ProtoDeclaration;
-            var typeName = type.GetTypeName();
-            var grpcTypeName = $"{proto.Option.Namespace}.{type.GetProtobufName()}";
+            var typeName = type.GetFullTypeName();
+            var grpcTypeName = $"{proto.Option.CSharpNamespace}.{type.GetProtobufName()}";
 
             writer.Append($"public static mds::{typeName} ToPocoModel(this global::{grpcTypeName} model)")
                 .AppendLine().Append("{").AppendLine().Append('\t', 1);
 
-            var bodyWriter = writer.Block($"ToPocoModel_{typeName}_BODY");
+            var bodyWriter = writer.Block($"ToPocoModel_{typeName.Replace('.', '_')}_BODY");
 
             bodyWriter.Append($"if(model == null) return null;").AppendLine(2);
 
@@ -232,7 +232,7 @@ namespace Cybtans.Proto.Generators.CSharp
             }
             else if(fieldType is EnumDeclaration e)
             {
-                var grpcTypeName = $"{Proto.Option.Namespace}.{e.GetProtobufName()}";
+                var grpcTypeName = $"global::{e.ProtoDeclaration.Option.CSharpNamespace}.{e.GetProtobufName()}";
                 return $"({grpcTypeName}){fieldName}";
             }
             else
@@ -257,7 +257,7 @@ namespace Cybtans.Proto.Generators.CSharp
             }
             else if (fieldType is EnumDeclaration)
             {
-                return $"({fieldType.GetTypeName()}){fieldName}";
+                return $"(mds::{fieldType.GetFullTypeName()}){fieldName}";
             }
             else
             {

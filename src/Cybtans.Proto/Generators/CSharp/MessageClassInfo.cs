@@ -24,6 +24,7 @@ namespace Cybtans.Proto.Generators.CSharp
             {
                 _fields.Add(item.Field.Name, item);
             }
+            Proto = proto;
         }
 
         public MessageDeclaration Message => _msg;
@@ -33,6 +34,7 @@ namespace Cybtans.Proto.Generators.CSharp
         public string Name { get; }
 
         public string Namespace { get; }
+        public ProtoFile Proto { get; }
 
         public List<MessageFieldInfo>? GetPathBinding(string template)
         {

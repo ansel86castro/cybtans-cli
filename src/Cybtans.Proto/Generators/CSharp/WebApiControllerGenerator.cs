@@ -132,7 +132,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 bodyWriter.Append($"public {response.GetControllerReturnTypeName()} {rpcName}").Append("(");
                 var parametersWriter = bodyWriter.Block($"PARAMS_{rpc.Name}");
-                bodyWriter.Append($"{GetRequestBinding(options.Method, request)}{request.GetFullRequestTypeName("__request")})").AppendLine()
+                bodyWriter.Append($"{GetRequestBinding(options.Method, request)}{request.GetFullRequestTypeName("request")})").AppendLine()
                     .Append("{").AppendLine()
                     .Append('\t', 1);
 
@@ -148,14 +148,14 @@ namespace Cybtans.Proto.Generators.CSharp
                         foreach (var field in path)
                         {
                             parametersWriter.Append($"{field.Type} {field.Field.Name}, ");
-                            methodWriter.Append($"__request.{field.Name} = {field.Field.Name};").AppendLine();
+                            methodWriter.Append($"request.{field.Name} = {field.Field.Name};").AppendLine();
                         }
                     }
                 }
 
                 if (response.HasStreams())
                 {
-                    methodWriter.Append($"var result = await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "__request" : "")});").AppendLine();
+                    methodWriter.Append($"var result = await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")});").AppendLine();
 
                     var result = "result";
                     var contentType = $"\"{options.StreamOptions?.ContentType ?? "application/octet-stream"}\"";
@@ -186,7 +186,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 }
                 else
                 {
-                    methodWriter.Append($"return _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "__request" : "")});");
+                    methodWriter.Append($"return _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")});");
                 }
             }
 

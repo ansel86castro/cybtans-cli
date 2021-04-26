@@ -16,7 +16,7 @@ namespace Cybtans.Proto.AST
         public MessageDeclaration(IToken start, string name) : base(start, name)
         {
             IsValueType = false;
-        }                
+        }                        
 
         public List<MessageDeclaration> InnerMessages { get; } = new List<MessageDeclaration>();
 
@@ -24,9 +24,7 @@ namespace Cybtans.Proto.AST
 
         public List<EnumDeclaration> Enums { get; } = new List<EnumDeclaration>();
 
-        public string Namespace => ProtoDeclaration?.Option?.Namespace;
-
-     
+        public string Namespace => ProtoDeclaration?.Option?.Namespace;     
 
         public Scope GetScope(Scope parent)
         {
@@ -59,9 +57,9 @@ namespace Cybtans.Proto.AST
                 message.ProtoDeclaration = ProtoDeclaration;
                 message.CheckSemantic(childScope, logger);
 
-                message.SourceName = message.Name;
-                message.Name = $"{Name}_{message.Name}";
-                ProtoDeclaration?.Declarations.Add(message);
+                //message.SourceName = message.Name;
+                //message.Name = $"{Name}_{message.Name}";
+                //ProtoDeclaration?.Declarations.Add(message);
             }
 
             foreach (var e in Enums)
@@ -70,9 +68,9 @@ namespace Cybtans.Proto.AST
                 e.ProtoDeclaration = ProtoDeclaration;
                 e.CheckSemantic(childScope, logger);
                 
-                e.SourceName = e.Name;
-                e.Name = $"{Name}_{e.Name}";
-                ProtoDeclaration?.Declarations.Add(e);
+                //e.SourceName = e.Name;
+                //e.Name = $"{Name}_{e.Name}";
+                //ProtoDeclaration?.Declarations.Add(e);
             }            
           
 

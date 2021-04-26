@@ -17,48 +17,69 @@ namespace Cybtans.Proto.Generators.CSharp
 {
 
     public class TypeGenerator : FileGenerator<ModelGeneratorOptions>
-    {        
+    {
         Dictionary<ITypeDeclaration, MessageClassInfo> _messages = new Dictionary<ITypeDeclaration, MessageClassInfo>();
 
-        public TypeGenerator(ProtoFile proto, ModelGeneratorOptions option):base(proto, option)
+        public TypeGenerator(ProtoFile proto, ModelGeneratorOptions option) : base(proto, option)
         {
-            Namespace = option.Namespace ?? $"{proto.Option.Namespace ?? proto.Filename.Pascal()}.Models";            
+            Namespace = option.Namespace ?? $"{proto.Option.Namespace ?? proto.Filename.Pascal()}.Models";
         }
 
         public MessageClassInfo GetMessageInfo(ITypeDeclaration declaration)
-        {            
-            if(!_messages.TryGetValue(declaration, out var info))
+        {
+            if (!_messages.TryGetValue(declaration, out var info))
             {
                 info = new MessageClassInfo((MessageDeclaration)declaration, _option, Proto);
                 _messages.Add(declaration, info);
             }
             return info;
-        }        
+        }
 
         public string Namespace { get; set; }
-        
+
         protected override void GenerateCode(ProtoFile proto)
-        {                                  
+        {
             foreach (var item in proto.Declarations)
             {
                 if (item is MessageDeclaration msg)
-                {                    
+                {
+                    if (msg.DeclaringMessage != null)
+                        continue;
+
                     var info = new MessageClassInfo(msg, _option, proto);
 
-                    GenerateMessage(info);                
+                    GenerateMessage(info);
 
                     _messages.Add(msg, info);
-                }               
-            }            
+                }
+            }
         }
-     
+
         private void GenerateMessage(MessageClassInfo info)
         {
             var writer = CreateWriter(Namespace);
 
-            var clsWriter = writer.Class;
             var usingWriter = writer.Usings;
+            if (_option.GenerateAccesor)
+            {
+                usingWriter.Append("using Cybtans.Serialization;").AppendLine();
+            }
 
+            var usings = new HashSet<string>();         
+
+            GenerateMessage(info, writer.Class, usings);
+
+            foreach (var item in usings)
+            {
+                usingWriter.Append(item).AppendLine();
+            }
+
+            writer.Save(info.Name);
+
+        }
+
+        private void GenerateMessage(MessageClassInfo info, CodeWriter clsWriter, HashSet<string> usings)
+        {
             MessageDeclaration msg = info.Message;
 
             if (msg.Option.Description != null)
@@ -88,37 +109,34 @@ namespace Cybtans.Proto.Generators.CSharp
                 clsWriter.Append($": {msg.Option.Base}");
                 if (_option.GenerateAccesor)
                 {
-                    usingWriter.Append("using Cybtans.Serialization;").AppendLine();
                     clsWriter.Append(", IReflectorMetadataProvider");
                 }
             }
             else if (_option.GenerateAccesor)
             {
-                usingWriter.Append("using Cybtans.Serialization;").AppendLine();
                 clsWriter.Append(": IReflectorMetadataProvider");
             }
-           
+
             clsWriter.AppendLine();
             clsWriter.Append("{").AppendLine();
             clsWriter.Append('\t', 1);
 
             var bodyWriter = clsWriter.Block("BODY");
 
-            if(msg.Fields.Any(x=>x.Type.IsMap || x.Type.IsArray)) 
+            if (msg.Fields.Any(x => x.Type.IsMap || x.Type.IsArray))
             {
-                usingWriter.Append("using System.Collections.Generic;").AppendLine();
+                usings.Add("using System.Collections.Generic;");
             }
 
             if (msg.Option.Description != null || msg.Fields.Any(x => x.Option.Description != null))
             {
-                usingWriter.Append("using System.ComponentModel;").AppendLine();
+                usings.Add("using System.ComponentModel;");
             }
 
-            if (msg.Fields.Any(x => x.Option.Required)) 
+            if (msg.Fields.Any(x => x.Option.Required))
             {
-                usingWriter.Append("using System.ComponentModel.DataAnnotations;").AppendLine();
+                usings.Add("using System.ComponentModel.DataAnnotations;");
             }
-            
 
             if (_option.GenerateAccesor)
             {
@@ -127,12 +145,13 @@ namespace Cybtans.Proto.Generators.CSharp
                     .AppendLine();
             }
 
-            foreach (var fieldInfo in info.Fields.Values.OrderBy(x=>x.Field.Number))
+            foreach (var fieldInfo in info.Fields.Values.OrderBy(x => x.Field.Number))
             {
+               
                 var field = fieldInfo.Field;
-                
-                if(field.Option.Description != null)
-                {                    
+
+                if (field.Option.Description != null)
+                {
                     bodyWriter.Append("/// <summary>").AppendLine();
                     bodyWriter.Append("/// ").Append(field.Option.Description).AppendLine();
                     bodyWriter.Append("/// </summary>").AppendLine();
@@ -148,54 +167,79 @@ namespace Cybtans.Proto.Generators.CSharp
                     bodyWriter.Append("[Obsolete]").AppendLine();
                 }
 
-                if(field.Option.Description != null)
+                if (field.Option.Description != null)
                 {
-                    bodyWriter.Append($"[Description(\"{field.Option.Description}\")]").AppendLine();                   
+                    bodyWriter.Append($"[Description(\"{field.Option.Description}\")]").AppendLine();
                 }
-               
+
                 bodyWriter
-                    .Append("public ")                    
-                    .Append(fieldInfo.Type);                              
-                
+                    .Append("public ")
+                    .Append(fieldInfo.Type);
+
                 bodyWriter.Append($" {fieldInfo.Name} {{get; set;}}");
-                
-                if(field.Option.Default != null)
+
+                if (field.Option.Default != null)
                 {
                     bodyWriter.Append(" = ").Append(field.Option.Default.ToString()).Append(";");
                 }
 
-                bodyWriter.AppendLine();
-                bodyWriter.AppendLine();
+                bodyWriter.AppendLine(2);
+                
             }
 
             if (_option.GenerateAccesor)
             {
-                bodyWriter.Append("public IReflectorMetadata GetAccesor()\r\n{\r\n\treturn __accesor;\r\n}");           
+                bodyWriter.Append("public IReflectorMetadata GetAccesor()\r\n{\r\n\treturn __accesor;\r\n}");
             }
 
-            if(info.Fields.Count == 1)
+            if (info.Fields.Count == 1)
             {
                 //Generate ImplicitConverter
                 var field = info.Fields.First().Value;
-                bodyWriter.AppendLine(2);
+                bodyWriter.AppendLine();
                 bodyWriter.Append($"public static implicit operator {info.Name}({field.Type} {field.Field.Name})\r\n{{");
                 bodyWriter.AppendLine();
                 bodyWriter.Append('\t', 1).Append($"return new {info.Name} {{ {field.Name} = {field.Field.Name} }};");
                 bodyWriter.AppendLine();
-                bodyWriter.Append("}");
-            }
-
-            clsWriter.AppendLine().Append("}").AppendLine();
+                bodyWriter.Append("}").AppendLine();
+            }         
 
             if (_option.GenerateAccesor)
             {
-                clsWriter.AppendLine(2);
-                GenerateAccesor(info, clsWriter);
+                clsWriter.AppendLine(2).Append($"\t#region {info.Name}  Accesor");
+                clsWriter.AppendLine().Append('\t', 1);
+
+                GenerateAccesor(info, clsWriter.Block($"ACESSOR_{info.Name}"));
+
+                clsWriter.Append("\t#endregion").AppendLine();
+                clsWriter.AppendLine();
             }
-          
 
-            writer.Save(info.Name);
+            
+            if (msg.InnerMessages.Any() || msg.Enums.Any())
+            {
+                clsWriter.AppendLine().Append($"\t#region {info.Name} Nested types").AppendLine();
+                clsWriter.Append("\tpublic static class Types").AppendLine().
+                    Append("\t{").AppendLine()
+                    .Append('\t', 2);
 
+                var innerTypeWriter = clsWriter.Block($"TYPES_{info.Name}");
+
+                foreach (var inner in msg.InnerMessages)
+                {                  
+                    GenerateMessage(new MessageClassInfo(inner, _option, info.Proto), innerTypeWriter, usings);
+                }
+
+                foreach (var inner in msg.Enums)
+                {                 
+                    GenerateEnum(inner, innerTypeWriter);
+                }
+
+                clsWriter.AppendLine().Append("\t}").AppendLine();
+                clsWriter.Append("\t#endregion").AppendLine();
+            }
+
+            clsWriter.AppendLine().Append("}").AppendLine();
         }
 
         private void GenerateAccesor(MessageClassInfo info, CodeWriter clsWriter)
@@ -249,6 +293,53 @@ namespace Cybtans.Proto.Generators.CSharp
             clsWriter.Append("}")
                 .AppendLine();
         }
+
+        private void GenerateEnum(EnumDeclaration decl, CodeWriter clsWriter)
+        {
+            if (decl.Option.Description != null)
+            {
+                clsWriter.Append("/// <summary>").AppendLine();
+                clsWriter.Append("/// ").Append(decl.Option.Description).AppendLine();
+                clsWriter.Append("/// </summary>").AppendLine();
+                clsWriter.Append($"[Description(\"{decl.Option.Description}\")]").AppendLine();
+            }
+
+            if (decl.Option.Deprecated)
+            {
+                clsWriter.Append($"[Obsolete]").AppendLine();
+            }
+
+            clsWriter.Append("public ");
+            clsWriter.Append($"enum {decl.GetTypeName()} ").AppendLine();
+
+            clsWriter.Append("{").AppendLine();
+            clsWriter.Append('\t', 1);
+
+            var bodyWriter = clsWriter.Block($"BODY_{decl.Name}");
+
+            foreach (var item in decl.Members.OrderBy(x => x.Value))
+            {
+                if (item.Option.Description != null)
+                {
+                    bodyWriter.Append("/// <summary>").AppendLine();
+                    bodyWriter.Append("/// ").Append(item.Option.Description).AppendLine();
+                    bodyWriter.Append("/// </summary>").AppendLine();
+                    bodyWriter.Append($"[Description(\"{item.Option.Description}\")]").AppendLine();
+                }
+
+                if (item.Option.Deprecated)
+                {
+                    bodyWriter.Append($"[Obsolete]").AppendLine();
+                }
+
+                bodyWriter.Append(item.Name).Append(" = ").Append(item.Value.ToString()).Append(",");
+                bodyWriter.AppendLine();
+                bodyWriter.AppendLine();
+            }
+
+            clsWriter.Append("}").AppendLine();
+        }
+
 
         string Template = @"
 public string GetPropertyName(int propertyCode)

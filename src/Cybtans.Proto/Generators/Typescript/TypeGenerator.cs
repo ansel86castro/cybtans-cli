@@ -20,7 +20,7 @@ namespace Cybtans.Proto.Generators.Typescript
             {
                 if (item is MessageDeclaration msg)
                 {
-                    AddBlock(msg.Name,GenerateMessage(msg));
+                    AddBlock(msg.Name, GenerateMessage(msg));
                 }
 
                 else if (item is EnumDeclaration e)
@@ -95,6 +95,16 @@ namespace Cybtans.Proto.Generators.Typescript
             writer.Append("}");
 
             writer.AppendLine();
+
+            foreach (var inner in msg.InnerMessages)
+            {
+                writer.Append(GenerateMessage(inner));
+            }
+
+            foreach (var inner in msg.Enums)
+            {
+                writer.Append(GenerateEnum(inner));
+            }
 
             return writer.ToString();
         }
