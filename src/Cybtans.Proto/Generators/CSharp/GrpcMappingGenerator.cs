@@ -2,6 +2,7 @@
 using Cybtans.Proto.Utils;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -37,25 +38,35 @@ namespace Cybtans.Proto.Generators.CSharp
 
             foreach (var proto in _protos)
             {
-                var types = proto.Declarations
-              .Where(x => x is ServiceDeclaration)
-              .Cast<ServiceDeclaration>()
-              .Where(x => x.Option.GrpcProxy)
-              .SelectMany(x => x.Rpcs)
-              .Select(rpc => (request: rpc.RequestType, response: rpc.ResponseType));
-
-                foreach (var (request, response) in types)
+                foreach (var decl in proto.Declarations)
                 {
-                    if (request is MessageDeclaration requestMsg)
+                    if (decl is ServiceDeclaration service)
                     {
-                        AddTypes(requestMsg, 0, typesMap);
-                    }
+                        foreach (var rpc in service.Rpcs)
+                        {
+                            if (rpc.RequestType is MessageDeclaration requestMsg && (service.Option.GrpcProxy || rpc.Option.GrpcMappingRequest))
+                            {
+                                AddTypes(requestMsg, 0, typesMap);
+                            }
 
-                    if (response is MessageDeclaration responseMsg)
-                    {
-                        AddTypes(responseMsg, 1, typesMap);
+                            if (rpc.ResponseType is MessageDeclaration responseMsg && (service.Option.GrpcProxy || rpc.Option.GrpcMappingResponse))
+                            {
+                                AddTypes(responseMsg, 1, typesMap);
+                            }
+                        }
                     }
-                }
+                    else if(decl is MessageDeclaration msg)
+                    {
+                        if (msg.Option.GrpcRequest)
+                        {
+                            AddTypes(msg, 0, typesMap);
+                        }
+                        if (msg.Option.GrpcResponse)
+                        {
+                            AddTypes(msg, 1, typesMap);
+                        }
+                    }
+                }       
             }
 
             if (!typesMap.Any())
@@ -66,10 +77,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var writer = CreateWriter(ns);
 
-            writer.Usings.Append("using System.Threading.Tasks;").AppendLine();
-
-            writer.Usings.Append($"using {modelNs};").AppendLine();
-            writer.Usings.Append("using System.Collections.Generic;").AppendLine();
+            writer.Usings.Append("using System;").AppendLine();                       
             writer.Usings.Append("using System.Linq;").AppendLine();
 
             writer.Usings.AppendLine().Append($"using mds = global::{modelNs};").AppendLine();
@@ -77,7 +85,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var clsWriter = writer.Class;
 
-            clsWriter.Append("public static class GrpcMappingExtensions").AppendLine().Append("{").AppendLine();
+            clsWriter.Append("public static class ProtobufMappingExtensions").AppendLine().Append("{").AppendLine();
             clsWriter.Append('\t', 1);
 
             var bodyWriter = clsWriter.Block("BODY");
@@ -105,13 +113,13 @@ namespace Cybtans.Proto.Generators.CSharp
         private void GenerateModelToProtobufMapping(MessageDeclaration type, CodeWriter writer)
         {
             var proto = type.ProtoDeclaration;
-            var typeName = type.GetTypeName();
-            var grpcTypeName = $"{proto.Option.Namespace}.{type.GetProtobufName()}";
+            var typeName = type.GetFullTypeName();
+            var grpcTypeName = $"{proto.Option.CSharpNamespace}.{type.GetProtobufName()}";
 
             writer.Append($"public static global::{grpcTypeName} ToProtobufModel(this mds::{typeName} model)")
                 .AppendLine().Append("{").AppendLine().Append('\t', 1);
 
-            var bodyWriter = writer.Block($"ToProtobufModel_{type.Name}_BODY");
+            var bodyWriter = writer.Block($"ToProtobufModel_{typeName.Replace('.', '_')}_BODY");
 
             bodyWriter.Append($"if(model == null) return null;").AppendLine(2);
 
@@ -155,13 +163,13 @@ namespace Cybtans.Proto.Generators.CSharp
         private void GenerateProtobufToPocoMapping(MessageDeclaration type, CodeWriter writer)
         {
             var proto = type.ProtoDeclaration;
-            var typeName = type.GetTypeName();
-            var grpcTypeName = $"{proto.Option.Namespace}.{type.GetProtobufName()}";
+            var typeName = type.GetFullTypeName();
+            var grpcTypeName = $"{proto.Option.CSharpNamespace}.{type.GetProtobufName()}";
 
             writer.Append($"public static mds::{typeName} ToPocoModel(this global::{grpcTypeName} model)")
                 .AppendLine().Append("{").AppendLine().Append('\t', 1);
 
-            var bodyWriter = writer.Block($"ToPocoModel_{typeName}_BODY");
+            var bodyWriter = writer.Block($"ToPocoModel_{typeName.Replace('.', '_')}_BODY");
 
             bodyWriter.Append($"if(model == null) return null;").AppendLine(2);
 
@@ -232,7 +240,7 @@ namespace Cybtans.Proto.Generators.CSharp
             }
             else if(fieldType is EnumDeclaration e)
             {
-                var grpcTypeName = $"{Proto.Option.Namespace}.{e.GetProtobufName()}";
+                var grpcTypeName = $"global::{e.ProtoDeclaration.Option.CSharpNamespace}.{e.GetProtobufName()}";
                 return $"({grpcTypeName}){fieldName}";
             }
             else
@@ -257,7 +265,7 @@ namespace Cybtans.Proto.Generators.CSharp
             }
             else if (fieldType is EnumDeclaration)
             {
-                return $"({fieldType.GetTypeName()}){fieldName}";
+                return $"(mds::{fieldType.GetFullTypeName()}){fieldName}";
             }
             else
             {

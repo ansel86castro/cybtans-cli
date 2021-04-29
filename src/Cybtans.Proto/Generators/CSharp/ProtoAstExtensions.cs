@@ -22,6 +22,10 @@ namespace Cybtans.Proto.Generators.CSharp
             {
                 name = GetPrimitiveTypeName(p);
             }
+            else if(type.TypeDeclaration is IUserDefinedType userType && userType.DeclaringMessage != null)
+            {
+                name = $"Types.{type.TypeDeclaration.Name.Pascal()}";
+            }
             else
             {
                 name = type.TypeDeclaration.Name.Pascal();
@@ -43,6 +47,20 @@ namespace Cybtans.Proto.Generators.CSharp
             if (type is PrimitiveType p)
             {
                 return GetPrimitiveTypeName(p);
+            }            
+            return type.Name.Pascal();
+        }
+
+
+        public static string GetFullTypeName(this ITypeDeclaration type)
+        {
+            if (type is PrimitiveType p)
+            {
+                return GetPrimitiveTypeName(p);
+            }
+            else if (type is IUserDefinedType userType && userType.DeclaringMessage != null)
+            {
+                return $"{userType.DeclaringMessage.GetFullTypeName()}.Types.{type.Name.Pascal()}";
             }
             return type.Name.Pascal();
         }

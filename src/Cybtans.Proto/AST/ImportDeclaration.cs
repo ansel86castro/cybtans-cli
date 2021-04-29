@@ -22,10 +22,15 @@ namespace Cybtans.Proto.AST
         {
             
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public enum ImportType
     {
-        Weak,Public
+        Weak, Public
     }
 }

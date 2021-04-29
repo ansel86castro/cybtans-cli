@@ -60,11 +60,16 @@ namespace Cybtans.Proto.Generators.Typescript
             {
                 name = GetPrimitiveTypeName(p);
             }
+            else if (type.TypeDeclaration is IUserDefinedType userType && userType.DeclaringMessage != null)
+            {
+                return $"{userType.DeclaringMessage.GetTypeName()}_Types_{name}";
+            }
 
             if (type.IsArray)
             {
                 name = $"{name}[]|null";
             }
+
             //else if (type.IsMap || !type.TypeDeclaration.IsValueType)
             //{
             //    name += "|null";
@@ -95,6 +100,11 @@ namespace Cybtans.Proto.Generators.Typescript
             {
                 return GetPrimitiveTypeName(p);
             }
+            else if (type is IUserDefinedType userType && userType.DeclaringMessage != null)
+            {
+               return $"{userType.DeclaringMessage.GetTypeName()}_Types_{type.Name.Pascal()}";
+            }
+
             return type.Name.Pascal();
         }
 

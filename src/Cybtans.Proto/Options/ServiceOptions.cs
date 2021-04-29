@@ -21,7 +21,14 @@ namespace Cybtans.Proto.Options
         [Field("grpc_proxy")]
         public bool GrpcProxy { get; set; }
 
+
+        [Field("grpc_proxy_name")]
+        public string? GrpcProxyName { get; set; }
+
         [Field("service_security")]
         public Wrapper ServiceSecurity { get; }
+
+        [Field("service_description")]
+        public string? ServiceDescription { get => Description; set => Description = value; }
     }
 }

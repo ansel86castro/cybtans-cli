@@ -60,12 +60,13 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public string GetImplementationName(ServiceDeclaration service)
         {
+            var name = service.Option.GrpcProxyName ?? service.Name.Pascal();
             if (_option.NameTemplate != null)
             {
-                return TemplateProcessor.Process(_option.NameTemplate, new { Name = service.Name.Pascal() });
+                return TemplateProcessor.Process(_option.NameTemplate, new { Name = name });
             }
 
-            return service.Name.Pascal();
+            return name;
         }
 
 
@@ -174,7 +175,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var bodyWriter = clsWriter.Block("BODY");
 
-            var grpcClientType = $"{Proto.Option.Namespace}.{info.Name}.{info.Name}Client";
+            var grpcClientType = $"{Proto.Option.CSharpNamespace}.{info.Name}.{info.Name}Client";
 
             bodyWriter.Append($"private readonly global::{grpcClientType}  _client;").AppendLine()                   
                       .Append($"private readonly ILogger<{proxyName}> _logger;").AppendLine()

@@ -98,7 +98,7 @@ namespace Cybtans.Proto.Generator
     {
         public string Namespace { get; set; }
 
-        public bool Generate { get; set; }
+        public bool Generate { get; set; } = true;
     }
 
     public class CSharpModelGenerationOption : CSharpStepOption
