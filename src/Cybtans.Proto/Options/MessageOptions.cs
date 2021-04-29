@@ -22,5 +22,14 @@ namespace Cybtans.Proto.Options
 
         [Field("description")]
         public string? Description { get; set; }
+
+        [Field("grpc_request")]
+        public bool GrpcRequest { get; set; }
+
+        [Field("grpc_response")]
+        public bool GrpcResponse { get; set; }
+
+        [Field("message_description")]
+        public string? MessageDescription { get => Description; set => Description = value; }
     }
 }

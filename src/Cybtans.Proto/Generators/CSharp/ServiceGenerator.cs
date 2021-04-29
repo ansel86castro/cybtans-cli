@@ -60,12 +60,13 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public string GetImplementationName(ServiceDeclaration service)
         {
+            var name = service.Option.GrpcProxyName ?? service.Name.Pascal();
             if (_option.NameTemplate != null)
             {
-                return TemplateProcessor.Process(_option.NameTemplate, new { Name = service.Name.Pascal() });
+                return TemplateProcessor.Process(_option.NameTemplate, new { Name = name });
             }
 
-            return service.Name.Pascal();
+            return name;
         }
 
 

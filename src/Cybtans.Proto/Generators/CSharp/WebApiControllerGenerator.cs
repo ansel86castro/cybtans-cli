@@ -49,10 +49,9 @@ namespace Cybtans.Proto.Generators.CSharp
 
         protected void GenerateControllerInternal(ServiceGenInfo srvInfo, CsFileWriter writer)
         {
-            var srv = srvInfo.Service;
-            writer.Usings.Append("using System.Collections.Generic;").AppendLine();
+            var srv = srvInfo.Service;         
             writer.Usings.Append("using System.Threading.Tasks;").AppendLine();
-            writer.Usings.Append("using Microsoft.AspNetCore.Http;").AppendLine();
+            //writer.Usings.Append("using Microsoft.AspNetCore.Http;").AppendLine();
             writer.Usings.Append("using Microsoft.AspNetCore.Mvc;").AppendLine();
 
             if (srvInfo.Service.Rpcs.Any(x => x.RequestType.HasStreams() || x.ResponseType.HasStreams() ))

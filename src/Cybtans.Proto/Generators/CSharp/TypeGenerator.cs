@@ -57,9 +57,11 @@ namespace Cybtans.Proto.Generators.CSharp
 
         private void GenerateMessage(MessageClassInfo info)
         {
-            var writer = CreateWriter(Namespace);
-
+            var writer = CreateWriter(Namespace);            
             var usingWriter = writer.Usings;
+
+            usingWriter.Append("using System;").AppendLine();
+
             if (_option.GenerateAccesor)
             {
                 usingWriter.Append("using Cybtans.Serialization;").AppendLine();

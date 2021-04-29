@@ -17,8 +17,7 @@ namespace Cybtans.Proto.Generators.CSharp
             this._outputDirectory = outputDirectory;
 
             _fileWriter.Append(CodeWriter.Header).AppendLine(2);
-
-            _fileWriter.Append("using System;").AppendLine();
+         
             _usingWriter = _fileWriter.Block("Using");
             _fileWriter.AppendLine();
 

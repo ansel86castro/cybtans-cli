@@ -13,9 +13,9 @@ namespace Cybtans.Proto.Options
 
         [Field("template")]
         public string? Template { get; set; }
-        
+
         [Field("method")]
-        public string? Method { get; set; }        
+        public string? Method { get; set; }
 
         [Field("file")]
         public StreamOptions? StreamOptions { get; set; }
@@ -30,7 +30,17 @@ namespace Cybtans.Proto.Options
         public GoogleHttpOptions? Google { get; set; }
 
         [Field("rpc_security")]
-        public SecurityOptions.Wrapper RpcSecurity { get; }
+        public Wrapper RpcSecurity { get; }
+
+        /// <summary>
+        /// valid values are "request", "response", "all"
+        /// </summary>
+        [Field("grpc_mapping")]
+        public string GrpcMapping { get; set; }
+
+        public bool GrpcMappingRequest => GrpcMapping == "request" || GrpcMapping == "all";
+
+        public bool GrpcMappingResponse => GrpcMapping == "response" || GrpcMapping == "all";
 
     }
 

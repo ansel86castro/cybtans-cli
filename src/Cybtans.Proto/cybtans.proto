@@ -17,6 +17,9 @@ extend google.protobuf.MethodOptions {
 
   //File stream response options
   FileStreamOptions file = 640005;
+
+  //valid values are "request", "response", "all"
+  string grpc_mapping = 640006;
 }
 
 
@@ -49,13 +52,16 @@ message TypescriptOptions{
 extend google.protobuf.MessageOptions {
 	//Message description string
    string message_description = 644001;
+   bool grpc_request = 644002;
+   bool grpc_response = 644003;
 }
 
 extend google.protobuf.ServiceOptions {
 	string prefix  = 645001;
 	string service_description = 645002;
 	Security service_security = 645003;
-	string grpc_proxy = 645004;
+	bool grpc_proxy = 645004;
+	string grpc_proxy_name = 645005;
 }
 
 message Security {

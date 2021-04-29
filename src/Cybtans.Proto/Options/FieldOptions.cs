@@ -23,6 +23,9 @@ namespace Cybtans.Proto.Options
         [Field("description")]
         public string? Description { get; set; }
 
+        [Field("field_description")]
+        public string? FieldDescription { get => Description; set => Description = value; }
+
         [Field("ts")]
         public TypecriptOptions Typecript { get; set; } = new TypecriptOptions();
     }

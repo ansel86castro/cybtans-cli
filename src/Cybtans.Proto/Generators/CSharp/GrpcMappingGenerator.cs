@@ -2,6 +2,7 @@
 using Cybtans.Proto.Utils;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -37,25 +38,35 @@ namespace Cybtans.Proto.Generators.CSharp
 
             foreach (var proto in _protos)
             {
-                var types = proto.Declarations
-              .Where(x => x is ServiceDeclaration)
-              .Cast<ServiceDeclaration>()
-              .Where(x => x.Option.GrpcProxy)
-              .SelectMany(x => x.Rpcs)
-              .Select(rpc => (request: rpc.RequestType, response: rpc.ResponseType));
-
-                foreach (var (request, response) in types)
+                foreach (var decl in proto.Declarations)
                 {
-                    if (request is MessageDeclaration requestMsg)
+                    if (decl is ServiceDeclaration service)
                     {
-                        AddTypes(requestMsg, 0, typesMap);
-                    }
+                        foreach (var rpc in service.Rpcs)
+                        {
+                            if (rpc.RequestType is MessageDeclaration requestMsg && (service.Option.GrpcProxy || rpc.Option.GrpcMappingRequest))
+                            {
+                                AddTypes(requestMsg, 0, typesMap);
+                            }
 
-                    if (response is MessageDeclaration responseMsg)
-                    {
-                        AddTypes(responseMsg, 1, typesMap);
+                            if (rpc.ResponseType is MessageDeclaration responseMsg && (service.Option.GrpcProxy || rpc.Option.GrpcMappingResponse))
+                            {
+                                AddTypes(responseMsg, 1, typesMap);
+                            }
+                        }
                     }
-                }
+                    else if(decl is MessageDeclaration msg)
+                    {
+                        if (msg.Option.GrpcRequest)
+                        {
+                            AddTypes(msg, 0, typesMap);
+                        }
+                        if (msg.Option.GrpcResponse)
+                        {
+                            AddTypes(msg, 1, typesMap);
+                        }
+                    }
+                }       
             }
 
             if (!typesMap.Any())
@@ -66,10 +77,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var writer = CreateWriter(ns);
 
-            writer.Usings.Append("using System.Threading.Tasks;").AppendLine();
-
-            writer.Usings.Append($"using {modelNs};").AppendLine();
-            writer.Usings.Append("using System.Collections.Generic;").AppendLine();
+            writer.Usings.Append("using System;").AppendLine();                       
             writer.Usings.Append("using System.Linq;").AppendLine();
 
             writer.Usings.AppendLine().Append($"using mds = global::{modelNs};").AppendLine();
