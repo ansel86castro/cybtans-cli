@@ -49,7 +49,9 @@ namespace Cybtans.Proto.Generators.CSharp
 
         protected void GenerateControllerInternal(ServiceGenInfo srvInfo, CsFileWriter writer)
         {
-            var srv = srvInfo.Service;         
+            var srv = srvInfo.Service;
+
+            writer.Usings.Append("using System;").AppendLine();
             writer.Usings.Append("using System.Threading.Tasks;").AppendLine();
             //writer.Usings.Append("using Microsoft.AspNetCore.Http;").AppendLine();
             writer.Usings.Append("using Microsoft.AspNetCore.Mvc;").AppendLine();
@@ -145,7 +147,7 @@ namespace Cybtans.Proto.Generators.CSharp
                     if (path != null)
                     {                        
                         foreach (var field in path)
-                        {
+                        {                            
                             parametersWriter.Append($"{field.Type} {field.Field.Name}, ");
                             methodWriter.Append($"request.{field.Name} = {field.Field.Name};").AppendLine();
                         }
