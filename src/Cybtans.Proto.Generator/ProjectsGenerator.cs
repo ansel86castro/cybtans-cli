@@ -14,7 +14,7 @@ namespace Cybtans.Proto.Generator
     public class ProjectsGenerator : IGenerator
     {
         const string EntityFramework = "ef";
-        const string SDK_VERSION = "1.2.20";
+        const string SDK_VERSION = "1.2.21";
 
         public class Options
         {
@@ -208,9 +208,9 @@ namespace Cybtans.Proto.Generator
                                 $"<PackageReference Include=\"Cybtans.Services\" Version=\"{SDK_VERSION}\" />",
                                 $"<PackageReference Include=\"Cybtans.Messaging\" Version=\"{SDK_VERSION}\" />",
                                 $"<PackageReference Include=\"Cybtans.Entities.EventLog\" Version=\"{SDK_VERSION}\" />",
-                                "<PackageReference Include=\"AutoMapper\" Version=\"10.0.0\" />",
-                                "<PackageReference Include=\"Microsoft.Extensions.Logging.Abstractions\" Version=\"3.1.7\" />",
-                                "<PackageReference Include=\"FluentValidation\" Version=\"9.2.0\" />"
+                                "<PackageReference Include=\"AutoMapper\" Version=\"10.0.11\" />",
+                                "<PackageReference Include=\"Microsoft.Extensions.Logging.Abstractions\" Version=\"5.0.0\" />",
+                                "<PackageReference Include=\"FluentValidation\" Version=\"10.1.0\" />"
                             });
                     }
                     break;
@@ -224,7 +224,7 @@ namespace Cybtans.Proto.Generator
                 case ProjectType.DataEF:
                     packages.AddRange(new[]
                     {
-                            "<PackageReference Include=\"Microsoft.EntityFrameworkCore\" Version=\"3.1.7\" />",
+                            "<PackageReference Include=\"Microsoft.EntityFrameworkCore\" Version=\"5.0.6\" />",
                             $"<PackageReference Include=\"Cybtans.Entities.EntityFrameworkCore\" Version=\"{SDK_VERSION}\" />",
                         });
                     break;
@@ -245,9 +245,9 @@ namespace Cybtans.Proto.Generator
                                 $"<PackageReference Include=\"Cybtans.Entities.EntityFrameworkCore\" Version=\"{SDK_VERSION}\" />",
                                 $"<PackageReference Include=\"Cybtans.Messaging.RabbitMQ\" Version=\"{SDK_VERSION}\" />",
                                 $"<PackageReference Include=\"Cybtans.Services\" Version=\"{SDK_VERSION}\" /> ",
-                                "<PackageReference Include=\"AutoMapper.Extensions.Microsoft.DependencyInjection\" Version=\"8.0.1\" />",
-                                "<PackageReference Include=\"FluentValidation.AspNetCore\" Version=\"9.2.0\" />",
-                                "<PackageReference Include=\"Microsoft.EntityFrameworkCore.SqlServer\" Version=\"3.1.7\" />"
+                                "<PackageReference Include=\"AutoMapper.Extensions.Microsoft.DependencyInjection\" Version=\"8.1.11\" />",
+                                "<PackageReference Include=\"FluentValidation.AspNetCore\" Version=\"10.1.0\" />",
+                                "<PackageReference Include=\"Microsoft.EntityFrameworkCore.SqlServer\" Version=\"5.0.6\" />"
                             });
                     }
                     break;

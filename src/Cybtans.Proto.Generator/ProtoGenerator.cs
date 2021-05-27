@@ -73,12 +73,13 @@ namespace Cybtans.Proto.Generator
                     Namespace = step.Controllers?.Namespace
                 };
 
-                if (step.CSharpClients?.Generate ?? true)
+                if (step.CSharpClients?.Generate ?? false)
                 {
-                    options.ClientOptions = new TypeGeneratorOption()
+                    options.ClientOptions = new ClientGenerationOptions()
                     {
                         OutputPath = Path.Combine(config.Path, step.CSharpClients?.Output ?? $"{step.Output}/{config.Service}.Clients"),
-                        Namespace = step.CSharpClients?.Namespace
+                        Namespace = step.CSharpClients?.Namespace,
+                        Prefix = step.CSharpClients?.Prefix
                     };
                 }
             }
@@ -156,7 +157,7 @@ namespace Cybtans.Proto.Generator
                 ModelOptions = new ModelGeneratorOptions(),
                 ServiceOptions = new ServiceGeneratorOptions(),
                 ControllerOptions = new WebApiControllerGeneratorOption(),
-                ClientOptions = new TypeGeneratorOption()
+                ClientOptions = new ClientGenerationOptions()
             };
 
             string protoFile = null;
@@ -299,7 +300,7 @@ namespace Cybtans.Proto.Generator
                 {
                     OutputPath = output,
                 },
-                ClientOptions = new TsOutputOption
+                ClientOptions = new TsClientOptions
                 {
                     OutputPath = output,
                     Framework = framework
@@ -321,11 +322,13 @@ namespace Cybtans.Proto.Generator
                         TypescriptGenerator tsGenerator = new TypescriptGenerator(new TypescriptOptions
                         {
                             ModelOptions = new TsOutputOption { OutputPath = output },
-                            ClientOptions = new TsOutputOption
+                            ClientOptions = new TsClientOptions
                             {
                                 OutputPath = output,
-                                Framework = ""
-                            }
+                                Framework = "",
+                                Prefix = option.Prefix
+                            },
+                            Options = option.Options
                         });
 
                         tsGenerator.GenerateCode(ast);
@@ -338,11 +341,13 @@ namespace Cybtans.Proto.Generator
                         TypescriptGenerator tsGenerator = new TypescriptGenerator(new TypescriptOptions
                         {
                             ModelOptions = new TsOutputOption { OutputPath = output },
-                            ClientOptions = new TsOutputOption
+                            ClientOptions = new TsClientOptions
                             {
                                 OutputPath = output,
-                                Framework = TsOutputOption.FRAMEWORK_ANGULAR
-                            }
+                                Framework = TsOutputOption.FRAMEWORK_ANGULAR,
+                                Prefix = option.Prefix
+                            },
+                            Options = option.Options
                         });
 
                         tsGenerator.GenerateCode(ast);

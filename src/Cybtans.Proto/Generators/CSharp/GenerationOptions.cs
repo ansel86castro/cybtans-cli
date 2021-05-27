@@ -8,7 +8,7 @@
 
         public WebApiControllerGeneratorOption ControllerOptions { get; set; }
 
-        public TypeGeneratorOption ClientOptions { get; set; }
+        public ClientGenerationOptions ClientOptions { get; set; }
 
         public ApiGateWayGeneratorOption ApiGatewayOptions { get; set; }
     }
@@ -60,5 +60,10 @@
     public class ApiGateWayGeneratorOption : WebApiControllerGeneratorOption
     {
 
+    }
+
+    public class ClientGenerationOptions : TypeGeneratorOption
+    {
+        public string Prefix { get; set; }
     }
 }

@@ -8,7 +8,9 @@ namespace Cybtans.Proto.Generators.Typescript
     public class TypescriptOptions
     {
         public TsOutputOption ModelOptions { get; set; }
-        public TsOutputOption ClientOptions { get; set; }
+        public TsClientOptions ClientOptions { get; set; }
+
+        public Dictionary<string, string> Options { get; set; }
     }
 
     public class TypescriptGenerator :ICodeGenerator

@@ -613,7 +613,8 @@ namespace Cybtans.Proto.Generator
             }                        
 
             var writer = new CsFileWriter(options.MappingNamespace, options.MappingOutput);
-                     
+
+            writer.Usings.Append("using System;").AppendLine();
             writer.Usings.Append("using System.Collections.Generic;").AppendLine();
             writer.Usings.Append("using System.Linq;").AppendLine();         
 
@@ -859,7 +860,7 @@ namespace Cybtans.Proto.Generator
             }
             else if (type.IsEnum)
             {
-                return $"({type.FullName}){fieldName}";
+                return $"(global::{type.FullName}){fieldName}";
             }
             else
             {
@@ -870,7 +871,10 @@ namespace Cybtans.Proto.Generator
                     {                      
                         return $"(global::{type.FullName})(int)({fieldName})";
                     }
-                    
+                    else if(type.IsPrimitive)
+                    {
+                        return $"{fieldName} != default ? {fieldName} : null";
+                    }                   
                 }
 
                 return fieldName;
