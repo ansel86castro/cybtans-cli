@@ -27,7 +27,7 @@ namespace Cybtans.Proto.Test
                 {
                     OutputPath = output,
                 },
-                ClientOptions = new TsOutputOption
+                ClientOptions = new TsClientOptions
                 {
                     OutputPath = output
                 }
@@ -56,7 +56,7 @@ namespace Cybtans.Proto.Test
                 {
                     OutputPath = output,
                 },
-                ClientOptions = new TsOutputOption
+                ClientOptions = new TsClientOptions
                 {
                     OutputPath = output,
                     Framework = TsOutputOption.FRAMEWORK_ANGULAR

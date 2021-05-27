@@ -3,19 +3,20 @@ using Cybtans.Proto.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Cybtans.Proto.Generators.CSharp
 {
-    public class ClientGenerator : FileGenerator<TypeGeneratorOption>
+    public class ClientGenerator : FileGenerator<ClientGenerationOptions>
     {
         private readonly ServiceGenerator _serviceGenerator;
         private readonly TypeGenerator _typeGenerator;
 
         public string Namespace { get; }
 
-        public ClientGenerator(ProtoFile proto, TypeGeneratorOption option, ServiceGenerator serviceGenerator, TypeGenerator typeGenerator) 
+        public ClientGenerator(ProtoFile proto, ClientGenerationOptions option, ServiceGenerator serviceGenerator, TypeGenerator typeGenerator) 
             : base(proto, option)
         {
             _serviceGenerator = serviceGenerator;
@@ -26,6 +27,8 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public override void GenerateCode()
         {
+            if (!_serviceGenerator.Services.Any()) return;
+
             Directory.CreateDirectory(_option.OutputPath);
 
             foreach (var item in _serviceGenerator.Services)
@@ -74,8 +77,11 @@ namespace Cybtans.Proto.Generators.CSharp
                 var options = rpc.Option;
                 var request = rpc.RequestType;
                 var response = rpc.ResponseType;
-                var rpcName = _serviceGenerator.GetRpcName(rpc);
-                string url = $"/{srv.Option.Prefix}";
+                var rpcName = _serviceGenerator.GetRpcName(rpc);                
+                string url = string.IsNullOrEmpty(_option.Prefix) ? 
+                    $"/{srv.Option.Prefix}" 
+                    : $"/{_option.Prefix}/{srv.Option.Prefix}";
+
                 List<MessageFieldInfo>? path = null;
                 if(options.Template != null)
                 {
@@ -88,7 +94,7 @@ namespace Cybtans.Proto.Generators.CSharp
                             template = template.Replace($"{{{field.Field.Name}}}", $"{{request.{field.Name}}}");
                         }
                     }
-                    url =$"/{srv.Option.Prefix}/{ template}";
+                    url += $"/{ template }";
                 }                                
 
                 bodyWriter.AppendLine();

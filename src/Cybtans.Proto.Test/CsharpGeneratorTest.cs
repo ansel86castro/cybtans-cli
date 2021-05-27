@@ -47,7 +47,7 @@ namespace Cybtans.Proto.Test
                 {
                     OutputPath = output
                 },
-                ClientOptions = new TypeGeneratorOption
+                ClientOptions = new  ClientGenerationOptions
                 {
                      OutputPath = output
                 }
@@ -81,7 +81,7 @@ namespace Cybtans.Proto.Test
                 {
                     OutputPath = output
                 },
-                ClientOptions = new TypeGeneratorOption
+                ClientOptions = new ClientGenerationOptions()
                 {
                     OutputPath = output,
                 }
@@ -116,7 +116,7 @@ namespace Cybtans.Proto.Test
                 {
                     OutputPath = output
                 },
-                ClientOptions = new TypeGeneratorOption
+                ClientOptions = new ClientGenerationOptions
                 {
                     OutputPath = output
                 }
@@ -151,7 +151,7 @@ namespace Cybtans.Proto.Test
                 {
                     OutputPath = output
                 },
-                ClientOptions = new TypeGeneratorOption
+                ClientOptions = new ClientGenerationOptions
                 {
                     OutputPath = output
                 },

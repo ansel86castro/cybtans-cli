@@ -9,12 +9,14 @@ namespace Cybtans.Proto.Generators.Typescript
     {
         HashSet<string> _types = new HashSet<string>();
         TsOutputOption _modelsOptions;
+        private TsClientOptions _options;
 
-        public AngularClientGenerator(ProtoFile proto, TsOutputOption modelsOptions , TsOutputOption option)
+        public AngularClientGenerator(ProtoFile proto, TsOutputOption modelsOptions , TsClientOptions option)
             :base(proto, option)
         {
             option.Filename ??= "services";
             _modelsOptions = modelsOptions;
+            _options = option;
         }
 
         public override void OnGenerationBegin(TsFileWriter writer)
@@ -50,7 +52,6 @@ namespace Cybtans.Proto.Generators.Typescript
             }
         }
 
-
         private string GenerateCode(ServiceDeclaration srv)
         {
             var writer = new CodeWriter();
@@ -72,7 +73,10 @@ namespace Cybtans.Proto.Generators.Typescript
                 if (!response.IsBuildIn)
                     _types.Add(response.Name.Pascal());
 
-                string url = srv.Option.Prefix != null ? $"/{srv.Option.Prefix}" : "";
+                string url = string.IsNullOrEmpty(_options.Prefix) ?
+                  $"/{srv.Option.Prefix}"
+                  : $"/{_options.Prefix}/{srv.Option.Prefix}";
+
                 List<FieldDeclaration> path = null;
 
                 if (options.Template != null)

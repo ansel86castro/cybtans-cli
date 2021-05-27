@@ -64,7 +64,7 @@ namespace Cybtans.Proto.Generator
 
         public CSharpServiceGenerationOption Services { get; set; }
 
-        public CSharpStepOption CSharpClients { get; set; }
+        public CSharpClientStepOptions CSharpClients { get; set; }
 
         public CSharpStepOption Controllers { get; set; }
 
@@ -119,9 +119,16 @@ namespace Cybtans.Proto.Generator
         }
     }
 
+    public class CSharpClientStepOptions: CSharpStepOption
+    {
+        public string Prefix { get; set; }
+    }
+
     public class StepClientOptions : StepOption
     {        
         public string Framework { get; set; }
+
+        public string Prefix { get; set; }
 
         public Dictionary<string, string> Options { get; set; } = new Dictionary<string, string>();
     }

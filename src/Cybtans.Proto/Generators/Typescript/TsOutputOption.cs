@@ -6,7 +6,11 @@
 
         public string Framework { get; set; }
 
-        public string Filename { get; set; }
-       
+        public string Filename { get; set; }        
+    }
+
+    public class TsClientOptions : TsOutputOption
+    {
+        public string Prefix { get; set; }
     }
 }
