@@ -75,8 +75,10 @@ namespace Cybtans.Proto.AST
         public static PrimitiveType GetPrimitiveType(Type type)
         {
             if (type == typeof(Guid)) return Guid;
+            else if (type == typeof(void)) return Empty;
             else if (type == typeof(byte)) return Int8;
             else if (type == typeof(short)) return Int16;
+            else if (type == typeof(bool)) return Bool;
             else if (type == typeof(int)) return Int32;
             else if (type == typeof(long)) return Int64;
             else if (type == typeof(ushort)) return UInt16;
@@ -84,24 +86,29 @@ namespace Cybtans.Proto.AST
             else if (type == typeof(ulong)) return UInt64;
             else if (type == typeof(float)) return Float;
             else if (type == typeof(double)) return Double;
-            else if (type == typeof(bool)) return Bool;
-            else if (type == typeof(string)) return String;
-            else if (type == typeof(byte[])) return Bytes;
-            else if (type == typeof(DateTime)) return Datetime;
-            else if (type == typeof(TimeSpan)) return Duration;
-            else if (type == typeof(DateTime?)) return TimeStamp;
-            else if (type == typeof(TimeSpan?)) return Duration;
-            else if (type == typeof(object)) return Object;
-            else if (type == typeof(void)) return Empty;
-            else if (type == typeof(Dictionary<,>)) return Map;
             else if (type == typeof(decimal)) return Decimal;
-            else if (type == typeof(Stream)) return Stream;            
+            else if (type == typeof(string)) return String;
+            else if (type == typeof(byte[])) return Bytes;            
+            else if (type == typeof(DateTime)) return Datetime;
+            else if (type == typeof(TimeSpan)) return Duration;       
+            
+            else if (type == typeof(object)) return Object;            
+            else if (type == typeof(Dictionary<,>)) return Map;            
+            else if (type == typeof(Stream)) return Stream;
+
+            else if (type == typeof(byte?)) return Int32Value;
+            else if (type == typeof(bool?)) return Bool;
             else if (type == typeof(int?)) return Int32Value;
             else if (type == typeof(uint?)) return UInt32Value;
+            else if (type == typeof(short?)) return Int16;
+            else if (type == typeof(ushort?)) return UInt16;
             else if (type == typeof(long?)) return Int64Value;
             else if (type == typeof(ulong?)) return UInt64Value;
-            else if (type == typeof(double?)) return DoubleValue;
+            else if (type == typeof(double?)) return DoubleValue;            
             else if (type == typeof(float?)) return FloatValue;
+            else if (type == typeof(decimal?)) return Decimal;
+            else if (type == typeof(DateTime?)) return TimeStamp;
+            else if (type == typeof(TimeSpan?)) return Duration;            
 
             else return null;
         }

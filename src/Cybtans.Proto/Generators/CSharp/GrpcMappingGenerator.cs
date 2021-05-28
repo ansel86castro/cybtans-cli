@@ -234,6 +234,10 @@ namespace Cybtans.Proto.Generators.CSharp
             {
                 return $"{fieldName} != null ? Google.Protobuf.ByteString.CopyFrom({fieldName}) : Google.Protobuf.ByteString.Empty";
             }
+            else if(PrimitiveType.Stream == fieldType)
+            {
+                return $"{fieldName} != null ? Google.Protobuf.ByteString.FromStream({fieldName}) : Google.Protobuf.ByteString.Empty";
+            }
             else if (fieldType is MessageDeclaration)
             {
                 return $"ToProtobufModel({fieldName})";

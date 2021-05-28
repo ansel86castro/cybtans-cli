@@ -206,9 +206,13 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 methodWriter.Append("try").AppendLine()
                     .Append("{").AppendLine();
-              
-                methodWriter.Append('\t', 1).Append($"var response = await _client.{rpcName}Async({(!PrimitiveType.Void.Equals(requestInfo) ? $"request.ToProtobufModel()" : "")});").AppendLine();
-                methodWriter.Append('\t', 1).Append($"return response.ToPocoModel();").AppendLine();
+
+                var response =!PrimitiveType.Void.Equals(returnInfo) ? "var response = " : "" ;
+                methodWriter.Append('\t', 1).Append($"{ response}await _client.{rpcName}Async({(!PrimitiveType.Void.Equals(requestInfo) ? $"request.ToProtobufModel()" : "")});").AppendLine();
+                if (!PrimitiveType.Void.Equals(returnInfo))
+                {
+                    methodWriter.Append('\t', 1).Append($"return response.ToPocoModel();").AppendLine();
+                }
 
                 methodWriter.Append("}").AppendLine();
                 methodWriter.Append("catch(RpcException ex)").AppendLine()
