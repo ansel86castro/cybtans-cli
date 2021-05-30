@@ -1,9 +1,5 @@
-﻿using Cybtans.Proto.Generators.CSharp;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Cybtans.Proto.Generator
 {
@@ -66,9 +62,9 @@ namespace Cybtans.Proto.Generator
 
         public CSharpClientStepOptions CSharpClients { get; set; }
 
-        public CSharpStepOption Controllers { get; set; }
+        public CSharpControllerGenerationOption Controllers { get; set; }
 
-        public CSharpStepOption GatewayOptions { get; set; }
+        public CSharpGatewayGenerationOptions GatewayOptions { get; set; }
 
         public List<StepClientOptions> Clients { get; set; } = new List<StepClientOptions>();
 
@@ -79,7 +75,7 @@ namespace Cybtans.Proto.Generator
 
         public string[] Imports { get;  set; }
 
-        public GrpcCompatibility? Grpc { get; set; } = new GrpcCompatibility();       
+        public GrpcCompatibility Grpc { get; set; } = new GrpcCompatibility();       
         
         public string NameTemplate { get; set; }
 
@@ -100,6 +96,7 @@ namespace Cybtans.Proto.Generator
 
         public bool Generate { get; set; } = true;
     }
+   
 
     public class CSharpModelGenerationOption : CSharpStepOption
     {
@@ -108,7 +105,7 @@ namespace Cybtans.Proto.Generator
 
     public class CSharpServiceGenerationOption: CSharpStepOption
     {
-        public string? NameTemplate { get; set; }
+        public string NameTemplate { get; set; }
 
         public GrpcProxy Grpc { get; set; }
         
@@ -117,6 +114,16 @@ namespace Cybtans.Proto.Generator
             public bool AutoRegister { get; set; }
          
         }
+    }
+
+    public class CSharpControllerGenerationOption : CSharpStepOption
+    {
+        public bool UseActionInterceptor { get; set; }
+    }
+
+    public class CSharpGatewayGenerationOptions: CSharpControllerGenerationOption
+    {
+
     }
 
     public class CSharpClientStepOptions: CSharpStepOption

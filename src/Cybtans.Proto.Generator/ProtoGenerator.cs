@@ -70,7 +70,8 @@ namespace Cybtans.Proto.Generator
                 options.ControllerOptions = new WebApiControllerGeneratorOption()
                 {
                     OutputPath = Path.Combine(config.Path, step.Controllers?.Output ?? $"{step.Output}/{config.Service}.RestApi/Controllers/Generated"),
-                    Namespace = step.Controllers?.Namespace
+                    Namespace = step.Controllers?.Namespace,
+                    UseActionInterceptor = step.Controllers?.UseActionInterceptor ?? false
                 };
 
                 if (step.CSharpClients?.Generate ?? false)
@@ -89,7 +90,8 @@ namespace Cybtans.Proto.Generator
                 options.ApiGatewayOptions = new ApiGateWayGeneratorOption
                 {
                     OutputPath = Path.Combine(config.Path, step.GatewayOptions?.Output ?? step.Gateway),
-                    Namespace = step.GatewayOptions?.Namespace ?? $"{config.Service}.Controllers"
+                    Namespace = step.GatewayOptions?.Namespace ?? $"{config.Service}.Controllers",
+                    UseActionInterceptor = step.GatewayOptions?.UseActionInterceptor ?? false
                 };
             }
             MicroserviceGenerator microserviceGenerator = new MicroserviceGenerator(options);            

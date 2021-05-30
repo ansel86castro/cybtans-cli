@@ -34,6 +34,9 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public override void GenerateCode()
         {
+            if (!Services.Any())
+                return;
+
             Directory.CreateDirectory(_option.OutputPath);
             
             foreach (var item in Services)
