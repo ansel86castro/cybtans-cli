@@ -138,7 +138,7 @@ namespace Cybtans.Proto.Generators.CSharp
             }
             else if (type.HasStreams())
             {
-                return "async Task<IActionResult>";
+                return "Task<IActionResult>";
             }            
             else
             {

@@ -54,7 +54,7 @@
 
     public class WebApiControllerGeneratorOption: TypeGeneratorOption
     {
-        
+        public bool UseActionInterceptor { get; set; } = true;
     }
 
     public class ApiGateWayGeneratorOption : WebApiControllerGeneratorOption

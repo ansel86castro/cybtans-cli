@@ -23,12 +23,13 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public override void GenerateCode()
         {
-            Directory.CreateDirectory(_option.OutputPath);
+            if (!_serviceGenerator.Services.Any())
+                return;
 
+            Directory.CreateDirectory(_option.OutputPath);
             foreach (var item in _serviceGenerator.Services)
             {
                 var srvInfo = item.Value;
-
                 GenerateController(srvInfo);
             }
         }
@@ -50,26 +51,28 @@ namespace Cybtans.Proto.Generators.CSharp
         protected void GenerateControllerInternal(ServiceGenInfo srvInfo, CsFileWriter writer)
         {
             var srv = srvInfo.Service;
+            var serviceType = GetServiceType(srv);
+            var clsWriter = writer.Class;
 
             writer.Usings.Append("using System;").AppendLine();
             writer.Usings.Append("using System.Threading.Tasks;").AppendLine();
             //writer.Usings.Append("using Microsoft.AspNetCore.Http;").AppendLine();
             writer.Usings.Append("using Microsoft.AspNetCore.Mvc;").AppendLine();
-
+            writer.Usings.Append("using Microsoft.Extensions.Logging;").AppendLine(); 
             if (srvInfo.Service.Rpcs.Any(x => x.RequestType.HasStreams() || x.ResponseType.HasStreams() ))
             {
                 writer.Usings.Append("using Cybtans.AspNetCore;").AppendLine();
             }
 
-            writer.Usings.AppendLine().Append($"using mds = global::{_typeGenerator.Namespace};").AppendLine();            
-
-            var clsWriter = writer.Class;
+            writer.Usings.AppendLine().Append($"using mds = global::{_typeGenerator.Namespace};").AppendLine();                        
 
             if (srv.Option.RequiredAuthorization || srv.Option.AllowAnonymous ||
                srv.Rpcs.Any(x => x.Option.RequiredAuthorization || x.Option.AllowAnonymous))
             {
                 writer.Usings.Append("using Microsoft.AspNetCore.Authorization;").AppendLine();
             }
+
+            #region  Class Name 
 
             if (srvInfo.Service.Option.Description != null)
             {
@@ -88,16 +91,43 @@ namespace Cybtans.Proto.Generators.CSharp
             clsWriter.Append("{").AppendLine();
             clsWriter.Append('\t', 1);
 
+            #endregion
+
             var bodyWriter = clsWriter.Block("BODY");
 
-            var serviceType = GetServiceType(srv);
-            bodyWriter.Append($"private readonly {serviceType} _service;").AppendLine().AppendLine();
+            #region Field Members
+
+            bodyWriter.Append($"private readonly {serviceType} _service;").AppendLine();
+            bodyWriter.Append($"private readonly ILogger<{srvInfo.Name}Controller> _logger;").AppendLine();
+
+            if (_option.UseActionInterceptor)
+            {
+                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IActionInterceptor _interceptor;").AppendLine();
+            }
+            bodyWriter.AppendLine();
+
+            #endregion
 
             #region Constructor
 
-            bodyWriter.Append($"public {srvInfo.Name}Controller({serviceType} service)").AppendLine();
+            bodyWriter.Append($"public {srvInfo.Name}Controller({serviceType} service,  ILogger<{srvInfo.Name}Controller> logger");
+
+            if (_option.UseActionInterceptor)
+            {
+                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IActionInterceptor interceptor = null");
+            }
+
+            bodyWriter.Append(")").AppendLine();
+
             bodyWriter.Append("{").AppendLine();
             bodyWriter.Append('\t', 1).Append("_service = service;").AppendLine();
+            bodyWriter.Append('\t', 1).Append("_logger = logger;").AppendLine();
+
+            if (_option.UseActionInterceptor)
+            {
+                bodyWriter.Append('\t', 1).Append("_interceptor = interceptor;").AppendLine();
+            }
+
             bodyWriter.Append("}").AppendLine();
 
             #endregion
@@ -131,7 +161,7 @@ namespace Cybtans.Proto.Generators.CSharp
                     bodyWriter.Append("[DisableFormValueModelBinding]").AppendLine();
                 }
 
-                bodyWriter.Append($"public {response.GetControllerReturnTypeName()} {rpcName}").Append("(");
+                bodyWriter.Append($"public async {response.GetControllerReturnTypeName()} {rpcName}").Append("(");
                 var parametersWriter = bodyWriter.Block($"PARAMS_{rpc.Name}");
                 bodyWriter.Append($"{GetRequestBinding(options.Method, request)}{request.GetFullRequestTypeName("request")})").AppendLine()
                     .Append("{").AppendLine()
@@ -151,12 +181,40 @@ namespace Cybtans.Proto.Generators.CSharp
                             parametersWriter.Append($"{field.Type} {field.Field.Name}, ");
                             methodWriter.Append($"request.{field.Name} = {field.Field.Name};").AppendLine();
                         }
+
+                        methodWriter.AppendLine();
                     }
                 }
 
+                if (PrimitiveType.Void.Equals(request))
+                {
+                    methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
+                }
+                else
+                {
+                    if (!request.HasStreams())
+                    {
+                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}} {{Message}}\", nameof({rpcName}), request);").AppendLine(2);
+                    }
+                    else
+                    {                        
+                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
+                    }
+
+                    if (_option.UseActionInterceptor)
+                    {
+                        methodWriter.AppendTemplate(inteceptorTemplate, new Dictionary<string, object>
+                        {
+                            ["ACTION"] = rpcName
+                        }).AppendLine(2);
+
+                        //methodWriter.Append($"if(_interceptor != null )\r\n\tawait _interceptor.Handle(request, nameof({rpcName})).ConfigureAwait(false);").AppendLine(2);
+                    }
+                }                
+
                 if (response.HasStreams())
                 {
-                    methodWriter.Append($"var result = await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")});").AppendLine();
+                    methodWriter.Append($"var result = await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);").AppendLine();
 
                     var result = "result";
                     var contentType = $"\"{options.StreamOptions?.ContentType ?? "application/octet-stream"}\"";
@@ -184,10 +242,15 @@ namespace Cybtans.Proto.Generators.CSharp
                     }
 
                     methodWriter.Append($"return new FileStreamResult({result}, {contentType}) {{ FileDownloadName = {fileName} }};");
-                }
+                }                
                 else
                 {
-                    methodWriter.Append($"return _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")});");
+                    if (!PrimitiveType.Void.Equals(response))
+                    {
+                        methodWriter.Append($"return ");
+                    }
+
+                    methodWriter.Append($"await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");
                 }
             }
 
@@ -256,10 +319,15 @@ namespace Cybtans.Proto.Generators.CSharp
 
 
         string streamReturnTemplate = @"
- if(Request.Headers.ContainsKey(""Accept"")
-	&& System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(Request.Headers[""Accept""], out var mimeType) && mimeType?.MediaType == ""application/x-cybtans"")
+if(Request.Headers.ContainsKey(""Accept"") && System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(Request.Headers[""Accept""], out var mimeType) && mimeType?.MediaType == ""application/x-cybtans"")
 {				
 	return new ObjectResult(result);
+}";
+
+        string inteceptorTemplate = 
+@"if(_interceptor != null )
+{
+    await _interceptor.Handle(request, nameof(@{ACTION})).ConfigureAwait(false);
 }";
     }
 }
