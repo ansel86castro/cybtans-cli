@@ -20,6 +20,8 @@ extend google.protobuf.MethodOptions {
 
   //valid values are "request", "response", "all"
   string grpc_mapping = 640006;
+
+  GraphQlOptions graphql = 640007;
 }
 
 
@@ -80,4 +82,8 @@ message Security {
 
 message ByteStream {
 	// Stream in C#, Blob in javascript
+}
+
+message GraphQlOptions {
+	string query = 647001;
 }

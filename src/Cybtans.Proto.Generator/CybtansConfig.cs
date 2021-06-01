@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Net.Http.Headers;
 
 namespace Cybtans.Proto.Generator
 {
@@ -66,6 +67,8 @@ namespace Cybtans.Proto.Generator
 
         public CSharpGatewayGenerationOptions GatewayOptions { get; set; }
 
+        public GraphQLStepOptions GraphQL { get; set; }
+
         public List<StepClientOptions> Clients { get; set; } = new List<StepClientOptions>();
 
         #endregion
@@ -78,6 +81,8 @@ namespace Cybtans.Proto.Generator
         public GrpcCompatibility Grpc { get; set; } = new GrpcCompatibility();       
         
         public string NameTemplate { get; set; }
+
+        public bool  GenerateGraphQLQuery { get; set; }
 
         #endregion
     }
@@ -129,6 +134,13 @@ namespace Cybtans.Proto.Generator
     public class CSharpClientStepOptions: CSharpStepOption
     {
         public string Prefix { get; set; }
+    }
+
+    public class GraphQLStepOptions : CSharpStepOption
+    {
+        public bool Explicit { get; set; }
+
+        public string QueryName { get; set; }
     }
 
     public class StepClientOptions : StepOption

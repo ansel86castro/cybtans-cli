@@ -34,6 +34,12 @@ namespace Cybtans.Proto.Generators
             return (CodeWriter)writer;
         }
 
+        public void AppendBlock(string blockName, CodeWriter writer)
+        {
+            sb.Append("@{" + blockName + "}");
+            AddWriter(writer, blockName);
+        }
+
         public void AddWriter(CodeWriter writer, string blockName)
         {
             if (blocks == null)
@@ -43,6 +49,8 @@ namespace Cybtans.Proto.Generators
 
             blocks.Add(blockName, writer);
         }
+
+      
 
         public CodeWriter Append(string value)
         {

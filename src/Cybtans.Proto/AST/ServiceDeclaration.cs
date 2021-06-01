@@ -76,7 +76,8 @@ namespace Cybtans.Proto.AST
 
         public ITypeDeclaration RequestType { get; set; }
 
-        public ITypeDeclaration ResponseType { get; set; }        
+        public ITypeDeclaration ResponseType { get; set; }      
+                
 
         public override void CheckSemantic(Scope scope, IErrorReporter logger)
         {

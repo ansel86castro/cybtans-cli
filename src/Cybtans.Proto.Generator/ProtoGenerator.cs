@@ -94,6 +94,18 @@ namespace Cybtans.Proto.Generator
                     UseActionInterceptor = step.GatewayOptions?.UseActionInterceptor ?? false
                 };
             }
+
+            if(step.GraphQL != null && step.GraphQL.Generate)
+            {
+                options.GraphQLOptions = new GraphQLGeneratorOptions
+                {
+                    OutputPath = Path.Combine(config.Path, step.GraphQL?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/GraphQL"),
+                    Namespace = step.GraphQL.Namespace ?? $"{config.Service}.GraphQL",
+                    QueryName = step.GraphQL.QueryName ?? "GraphQLQueryDefinition",
+                    Explicit = step.GraphQL.Explicit
+                };
+            }
+
             MicroserviceGenerator microserviceGenerator = new MicroserviceGenerator(options);            
 
             microserviceGenerator.GenerateCode(ast, scope);            

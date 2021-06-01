@@ -64,7 +64,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 writer.Usings.Append("using Cybtans.AspNetCore;").AppendLine();
             }
 
-            writer.Usings.AppendLine().Append($"using mds = global::{_typeGenerator.Namespace};").AppendLine();                        
+            writer.Usings.AppendLine().Append($"using mds = global::{_typeGenerator.Namespace};").AppendLine();
 
             if (srv.Option.RequiredAuthorization || srv.Option.AllowAnonymous ||
                srv.Rpcs.Any(x => x.Option.RequiredAuthorization || x.Option.AllowAnonymous))

@@ -122,7 +122,7 @@ namespace Cybtans.Proto.AST
         {
             if (other == null) return false;
 
-            if (System.Object.ReferenceEquals(this, other))
+            if (ReferenceEquals(this, other))
                 return true;
 
             return ClrType == other.ClrType;

@@ -42,6 +42,17 @@ namespace Cybtans.Proto.Generators.CSharp
             return name;
         }
 
+        public static string GetFieldTypeName(this FieldDeclaration field)
+        {
+            var name = field.Type.GetTypeName();
+            if (field.Option.Optional && field.Type.TypeDeclaration.IsValueType)
+            {
+                //check ist the type is nullable
+                name += "?";
+            }
+            return name;
+        }
+
         public static string GetTypeName(this ITypeDeclaration type)
         {
             if (type is PrimitiveType p)
@@ -208,6 +219,26 @@ namespace Cybtans.Proto.Generators.CSharp
             }
 
             return name;
+        }
+      
+        public static void AddTypes(this MessageDeclaration type, ICollection<ITypeDeclaration> types)
+        {
+            if (types.Contains(type))
+                return;
+
+            types.Add(type);
+
+            foreach (var fieldType in type.Fields.Where(x => x.FieldType is IUserDefinedType).Select(x => x.FieldType))
+            {
+                if (fieldType is MessageDeclaration msg)
+                {
+                    AddTypes(msg, types);
+                }
+                else
+                {
+                    types.Add(fieldType);
+                }
+            }
         }
     }
 }

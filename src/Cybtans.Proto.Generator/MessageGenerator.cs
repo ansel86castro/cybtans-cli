@@ -4,15 +4,13 @@ using Cybtans.Proto.Generators;
 using Cybtans.Proto.Generators.CSharp;
 using Cybtans.Proto.Utils;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
+using System.Text;
 using static Cybtans.Proto.Generator.TemplateManager;
 
 namespace Cybtans.Proto.Generator
@@ -38,6 +36,8 @@ namespace Cybtans.Proto.Generator
             public GrpcCompatibility? Grpc { get; set; } = new GrpcCompatibility();
 
             public string? NameTemplate { get; set; }
+
+            public bool GenerateGraphQl { get; set; }
 
             public bool IsValid()
             {
@@ -133,25 +133,9 @@ namespace Cybtans.Proto.Generator
 
         private void GenerateProto(GenerationOptions options)
         {
-            var loadAssemblyPath = Path.GetDirectoryName(options.AssemblyFilename);
-            if (string.IsNullOrEmpty(loadAssemblyPath))
-            {
-                loadAssemblyPath = Environment.CurrentDirectory;
-            }
-
+           
             Console.WriteLine($"Generating proto from {options.AssemblyFilename}");
-
-            //var assembly = Assembly.Load(File.ReadAllBytes(options.AssemblyFilename));
-            //AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs args)
-            //{
-            //    var i = args.Name.IndexOf(',');
-            //    var name = args.Name.Substring(0, i);
-            //    string assemplyPath = Path.Combine(loadAssemblyPath, name + ".dll");
-            //    if (!File.Exists(assemplyPath))
-            //        return null;
-
-            //    return Assembly.Load(File.ReadAllBytes(assemplyPath));
-            //};
+         
             var loader = new Cybtans.Proto.Utils.AssemblyLoader(options.AssemblyFilename);
             var exportedTypes = loader.LoadTypes();
             var types = GenerateMessages(options, exportedTypes);
@@ -187,7 +171,9 @@ namespace Cybtans.Proto.Generator
                 ServiceName = config.Service,
                 ServiceDirectory = Path.Combine(config.Path, step.Output),
                 Grpc = step.Grpc,
-                NameTemplate = step.NameTemplate
+                NameTemplate = step.NameTemplate,
+                GenerateGraphQl = step.GenerateGraphQLQuery
+
             };
 
             if (options.Grpc.MappingOutput != null)
@@ -544,6 +530,7 @@ namespace Cybtans.Proto.Generator
                     continue;                                
 
                 codeWriter.AppendLine();
+
                 if (attr.Service == ServiceType.ReadOnly)
                 {
                     codeWriter.Append(TemplateProcessor.Process(GetRawTemplate("ReadOnlyProtoServices.tpl"), new
@@ -553,7 +540,8 @@ namespace Cybtans.Proto.Generator
                         ID_TYPE = GetTypeName(IdProp.PropertyType, options),
                         ID = IdProp.Name.Camel(),
                         ENTITYDTO = GetTypeName(type, options),
-                        READ_POLICY = GetSecurity(attr.Security, attr.AllowedRead ?? $"{ type.Name.ToLowerInvariant()}.read"),                       
+                        GetAll_OPTIONS = GetOptions(type, attr, "GetAll", options),
+                        Get_OPTIONS = GetOptions(type, attr, "Get", options),                       
                     }));
                 }
                 else
@@ -565,24 +553,81 @@ namespace Cybtans.Proto.Generator
                         ID_TYPE = GetTypeName(IdProp.PropertyType, options),
                         ID = IdProp.Name.Camel(),
                         ENTITYDTO = GetTypeName(type, options),
-                        READ_POLICY = GetSecurity(attr.Security, attr.AllowedRead ?? $"{ type.Name.ToLowerInvariant()}.read"),
-                        WRITE_POLICY = GetSecurity(attr.Security, attr.AllowedWrite ?? $"{ type.Name.ToLowerInvariant()}.write")
+                        GetAll_OPTIONS = GetOptions(type, attr, "GetAll", options),
+                        Get_OPTIONS = GetOptions(type, attr, "Get", options),
+                        Create_OPTIONS = GetOptions(type, attr, "Create", options),
+                        Update_OPTIONS = GetOptions(type, attr, "Update", options),
+                        Delete_OPTIONS = GetOptions(type, attr, "Delete", options),
                     }));
                 }
 
             }
         }
 
-        private string GetSecurity(SecurityType securityType, string security)
-        {            
-            return securityType switch
+        private string GetOptions(Type type, GenerateMessageAttribute attr, string rpc, GenerationOptions options)
+        {
+            var sb = new StringBuilder();
+
+            var security = GetSecurity(attr, rpc);
+            if (security != null)
             {
-                SecurityType.None => "",
-                SecurityType.Policy => $"option policy = \"{security}\";",
-                SecurityType.Role => $"option roles = \"{security}\";",
-                SecurityType.Authorized => $"option authorized = true;",
-                SecurityType.AllowAnonymous => $"option anonymous = true;",               
-                _ => throw new NotImplementedException()
+                sb.Append(security).AppendLine();
+            }
+
+            var typeName = GetTypeName(type, options);
+            if (rpc == "GetAll")
+            {
+                sb.Append($"option (description) = \"Returns a collection of {typeName}\";").AppendLine();
+                if (options.GenerateGraphQl)
+                {
+                    sb.Append($"option (graphql).query = \"{type.Name.Camel().Pluralize()}\";").AppendLine();
+                }
+            }
+            else if (rpc == "Get")
+            {
+                sb.Append($"option (description) = \"Returns one {typeName} by Id\";").AppendLine();
+                if (options.GenerateGraphQl)
+                {
+                    sb.Append($"option (graphql).query = \"{type.Name.Camel()}\";").AppendLine();
+                }
+            }
+            else if (rpc == "Create")
+            {
+                sb.Append($"option (description) = \"Creates one {typeName}\";").AppendLine();
+            }
+            else if (rpc == "Update")
+            {
+                sb.Append($"option (description) = \"Updates one {typeName} by Id\";").AppendLine();
+            }
+            else if (rpc == "Delete")
+            {
+                sb.Append($"option (description) = \"Deletes one {typeName} by Id\";").AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        private string GetSecurity(GenerateMessageAttribute attr, string rpc)
+        {
+            var security = new List<string>();
+            if(attr.AllowedRead != null)
+            {
+                security.Add(attr.AllowedRead);
+            }
+
+            if((rpc == "Create" || rpc == "Update" || rpc == "Delete") && (attr.AllowedWrite !=null && attr.AllowedWrite != attr.AllowedRead))
+            {
+                security.Add(attr.AllowedWrite);
+            }
+
+            var names = string.Join(",", security);
+            return attr.Security switch
+            {                
+                SecurityType.Policy => $"option (policy) = \"{names}\";",
+                SecurityType.Role => $"option (roles) = \"{names}\";",
+                SecurityType.Authorized => $"option (authorized) = true;",
+                SecurityType.AllowAnonymous => $"option (anonymous) = true;", 
+                _ => null
             };
         }
 

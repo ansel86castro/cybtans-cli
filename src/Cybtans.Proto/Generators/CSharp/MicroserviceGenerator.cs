@@ -31,6 +31,12 @@ namespace Cybtans.Proto.Generators.CSharp
             new GrpcMappingGenerator(proto, protos, _options.ServiceOptions, _options.ModelOptions)
                 .GenerateCode();
 
+            if (_options.GraphQLOptions != null)
+            {
+                new GraphQLGenerator(proto, protos, _options.GraphQLOptions, _options.ServiceOptions, _options.ModelOptions)
+                   .GenerateCode();
+            }
+
             foreach (var item in protos)
             {
                 GenerateCodeInternal(item);
@@ -64,7 +70,8 @@ namespace Cybtans.Proto.Generators.CSharp
                             .GenerateCode();
                         }
                     }
-                }
+                }            
+               
             }
         }
     }
