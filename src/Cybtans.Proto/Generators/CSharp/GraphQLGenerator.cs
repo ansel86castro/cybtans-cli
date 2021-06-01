@@ -3,7 +3,6 @@ using Cybtans.Proto.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace Cybtans.Proto.Generators.CSharp
 {
@@ -40,7 +39,7 @@ namespace Cybtans.Proto.Generators.CSharp
             writer.Usings.Append($"using {modelNs};").AppendLine();
 
             var serviceNs = _serviceOption.Namespace ?? $"{Proto.Option.Namespace ?? Proto.Filename.Pascal()}.Services";
-            writer.Usings.Append($"using {serviceNs};").AppendLine();
+            //writer.Usings.Append($"using {serviceNs};").AppendLine();
         }
 
         public override void OnGenerationEnd(CsFileWriter writer)
@@ -52,7 +51,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var bodyWriter = clsWriter.Append('\t', 1).Block($"BODY__QUERY__");
 
-            bodyWriter.Append($"public {_option.QueryName}(IHttpContextAccessor httpContextAccessor, IAuthorizationService authorizationService)").AppendLine().Append("{").AppendLine();
+            bodyWriter.Append($"public {_option.QueryName}()").AppendLine().Append("{").AppendLine();
             var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
 
             Dictionary<string, CodeWriter> slots = new Dictionary<string, CodeWriter>();
@@ -98,7 +97,7 @@ namespace Cybtans.Proto.Generators.CSharp
                     if (!CanGenerateRpc(rpc)) continue;
 
                     if (rpc.ResponseType is MessageDeclaration msg)
-                    {                       
+                    {
                         msg.AddTypes(declarations);
                     }
                 }
@@ -131,7 +130,6 @@ namespace Cybtans.Proto.Generators.CSharp
         {
             writer.Save(_option.QueryName);
         }
-
 
         private void GenerateEnumGraph(EnumDeclaration e, CodeWriter clsWriter)
         {
@@ -226,7 +224,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 var queryName = GetQueryName(rpc, service);
                 methodWriter.Append($"FieldAsync<{GetGraphTypeName(response)}>(\"{queryName}\",\r\n ");
 
-                if(rpc.Option.Description != null)
+                if (rpc.Option.Description != null)
                 {
                     methodWriter.Append($"\tdescription: \"{rpc.Option.Description}\",\r\n");
                 }
@@ -247,6 +245,13 @@ namespace Cybtans.Proto.Generators.CSharp
                 methodWriter.Append('\t', 1).Append("resolve: async context =>\r\n\t{\r\n");
 
                 var resolveWriter = methodWriter.Append('\t', 2).Block($"RESOLVER_{queryName}");
+
+                #region Security
+
+                AddSecurity(service, rpc, resolveWriter);
+
+                #endregion
+
                 if (!PrimitiveType.Void.Equals(request))
                 {
                     var requestMsg = (MessageDeclaration)request;
@@ -260,7 +265,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 resolveWriter.Append($"var service = context.RequestServices.GetRequiredService<{GetServiceName(service)}>();").AppendLine();
 
-                if (!PrimitiveType.Void.Equals(request)) 
+                if (!PrimitiveType.Void.Equals(request))
                 {
                     resolveWriter.Append($"return await service.{rpc.Name}(request);").AppendLine();
                 }
@@ -276,6 +281,36 @@ namespace Cybtans.Proto.Generators.CSharp
             }
 
             methodWriter.Append($"#endregion {service.Name}").AppendLine(2);
+        }
+
+        private static void AddSecurity(ServiceDeclaration service, RpcDeclaration rpc, CodeWriter resolveWriter)
+        {
+            if (!service.Option.RequiredAuthorization && !rpc.Option.RequiredAuthorization)
+                return;
+
+            resolveWriter.Append("var httpContext = context.RequestServices.GetRequiredService<IHttpContextAccessor>().HttpContext;").AppendLine();
+
+            if (rpc.Option.Authorized || service.Option.Authorized)
+            {                
+                resolveWriter.Append("if (!httpContext.User.Identity.IsAuthenticated)\r\n{\r\n\t throw new UnauthorizedAccessException(\"Authentication Required\");\r\n}").AppendLine();
+            }
+            
+            if (!string.IsNullOrEmpty(service.Option.Roles) || !string.IsNullOrEmpty(rpc.Option.Roles))
+            {
+                var roles = (rpc.Option.Roles ?? service.Option.Roles).Split(",");
+               
+                var roleChek = roles.Select(r => $"!httpContext.User.IsInRole(\"{r}\")").Aggregate((x, y) => $"{x} || {y}");
+                resolveWriter.Append($"if ({roleChek})\r\n{{\r\n\t throw new UnauthorizedAccessException(\"Roles Authorization Required\");\r\n}}").AppendLine();
+            }
+
+            if (!string.IsNullOrEmpty(rpc.Option.Policy) || !string.IsNullOrEmpty(service.Option.Policy))
+            {
+                resolveWriter.Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine();
+                resolveWriter.Append($"var authorizationResult = await authorizationService.AuthorizeAsync(httpContext.User, \"{rpc.Option.Policy ?? service.Option.Policy}\");").AppendLine();
+                resolveWriter.Append("if (!authorizationResult.Succeeded)\r\n{\r\n\t throw new UnauthorizedAccessException(\"Policy Authorization Required\");\r\n}").AppendLine();
+            }
+
+            resolveWriter.AppendLine();
         }
 
         private static void AddNamedParameters(CodeWriter methodWriter, FieldDeclaration field)
@@ -372,16 +407,17 @@ namespace Cybtans.Proto.Generators.CSharp
     
         protected virtual string GetServiceName(ServiceDeclaration service)
         {
-            return _serviceOption.GetInterfaceName(service);
+            var serviceNs = _serviceOption.Namespace ?? $"{Proto.Option.Namespace ?? Proto.Filename.Pascal()}.Services";
+            return $"global::{serviceNs}.{_serviceOption.GetInterfaceName(service)}";
         }
 
         string schemaTemplate = @"
 public class @{NAME} : Schema
 {
-    public @{NAME}(IServiceProvider provider, IHttpContextAccessor httpContextAccessor, IAuthorizationService authorizationService)
+    public @{NAME}(IServiceProvider provider)
         : base(provider)
     {            
-        Query = new @{QUERY}(httpContextAccessor, authorizationService); 
+        Query = new @{QUERY}(); 
     }
 }
 ";
