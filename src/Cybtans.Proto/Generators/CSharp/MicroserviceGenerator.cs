@@ -31,10 +31,16 @@ namespace Cybtans.Proto.Generators.CSharp
             new GrpcMappingGenerator(proto, protos, _options.ServiceOptions, _options.ModelOptions)
                 .GenerateCode();
 
-            if (_options.GraphQLOptions != null)
+            if (_options.ServiceOptions?.GraphQLOptions != null)
             {
-                new GraphQLGenerator(proto, protos, _options.GraphQLOptions, _options.ServiceOptions, _options.ModelOptions)
-                   .GenerateCode();
+                new ServiceGraphQLGenerator(proto, protos, _options.ServiceOptions, _options.ModelOptions)
+                    .GenerateCode();
+            }
+
+            if(_options.ClientOptions!=null && _options.ApiGatewayOptions?.GraphQLOptions != null)
+            {
+                new GatewayGraphQlGenerator(proto, protos, _options.ClientOptions, _options.ApiGatewayOptions, _options.ModelOptions)
+                    .GenerateCode();
             }
 
             foreach (var item in protos)

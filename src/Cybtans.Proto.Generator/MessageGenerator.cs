@@ -146,12 +146,12 @@ namespace Cybtans.Proto.Generator
 
             if (types.Any() && options.GenerateCode && options.ServiceName != null && options.ServiceDirectory != null)
             {
-                ProtoGenerator protoGenerator = new ProtoGenerator();
-                protoGenerator.Generate(new[] {
-                    "proto",
-                    "-n", options.ServiceName,
-                    "-o", options.ServiceDirectory,
-                    "-f",  options.ProtoOutputFilename });
+                //ProtoGenerator protoGenerator = new ProtoGenerator();
+                //protoGenerator.Generate(new[] {
+                //    "proto",
+                //    "-n", options.ServiceName,
+                //    "-o", options.ServiceDirectory,
+                //    "-f",  options.ProtoOutputFilename });
 
                 GenerateMappings(types, options);
                 GenerateServicesImplementation(types, options);                

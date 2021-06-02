@@ -14,8 +14,7 @@ namespace Cybtans.Proto.Generators.CSharp
         public ClientGenerationOptions ClientOptions { get; set; }
 
         public ApiGateWayGeneratorOption ApiGatewayOptions { get; set; }
-
-        public GraphQLGeneratorOptions GraphQLOptions { get; set; }
+      
     }
 
     public class ModelGeneratorOptions: TypeGeneratorOption
@@ -56,6 +55,8 @@ namespace Cybtans.Proto.Generators.CSharp
             }
         }
 
+        public GraphQLGeneratorOptions GraphQLOptions { get; set; }
+
         public string GetInterfaceName(ServiceDeclaration service)
         {
             if (NameTemplate != null)
@@ -64,7 +65,8 @@ namespace Cybtans.Proto.Generators.CSharp
             }
 
             return $"I{service.Name.Pascal()}";
-        }
+        }       
+
     }
 
     public class WebApiControllerGeneratorOption: TypeGeneratorOption
@@ -74,12 +76,18 @@ namespace Cybtans.Proto.Generators.CSharp
 
     public class ApiGateWayGeneratorOption : WebApiControllerGeneratorOption
     {
-
+        public GraphQLGeneratorOptions GraphQLOptions { get; set; }
     }
 
     public class ClientGenerationOptions : TypeGeneratorOption
     {
         public string Prefix { get; set; }
+
+        public string GetClientName(ServiceDeclaration service, ProtoFile proto)
+        {
+            var ns = Namespace ?? $"{proto.Option.Namespace ?? proto.Filename.Pascal()}.Clients";
+            return $"global::{ns}.I{service.Name.Pascal()}Client";
+        }
     }
 
     public class GraphQLGeneratorOptions : TypeGeneratorOption

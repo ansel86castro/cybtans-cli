@@ -6,15 +6,13 @@ using System.Linq;
 
 namespace Cybtans.Proto.Generators.CSharp
 {
-    public class GraphQLGenerator : SingleFileGenerator<GraphQLGeneratorOptions>
-    {
-        private readonly ServiceGeneratorOptions _serviceOption;
+    public abstract class GraphQLGenerator : SingleFileGenerator<GraphQLGeneratorOptions>
+    {        
         private readonly ModelGeneratorOptions _modelOptions;
 
-        public GraphQLGenerator(ProtoFile entryPoint, IEnumerable<ProtoFile> protos, GraphQLGeneratorOptions option, ServiceGeneratorOptions serviceOption, ModelGeneratorOptions modelOptions)
+        public GraphQLGenerator(ProtoFile entryPoint, IEnumerable<ProtoFile> protos, GraphQLGeneratorOptions option, ModelGeneratorOptions modelOptions)
             : base(entryPoint, protos, option, option.Namespace ?? $"{entryPoint.Option.Namespace ?? entryPoint.Filename.Pascal()}.GraphQL")
-        {
-            _serviceOption = serviceOption;
+        {            
             _modelOptions = modelOptions;
         }
 
@@ -36,23 +34,15 @@ namespace Cybtans.Proto.Generators.CSharp
             writer.Usings.Append("using Microsoft.AspNetCore.Http;").AppendLine();
 
             var modelNs = _modelOptions.Namespace ?? $"{Proto.Option.Namespace ?? Proto.Filename.Pascal()}.Models";
-            writer.Usings.Append($"using {modelNs};").AppendLine();
-
-            var serviceNs = _serviceOption.Namespace ?? $"{Proto.Option.Namespace ?? Proto.Filename.Pascal()}.Services";
-            //writer.Usings.Append($"using {serviceNs};").AppendLine();
+            writer.Usings.Append($"using {modelNs};").AppendLine();            
         }
 
         public override void OnGenerationEnd(CsFileWriter writer)
         {
             var clsWriter = new CodeWriter();
 
-            clsWriter.Append($"public class {_option.QueryName} : ObjectGraphType").AppendLine();
+            clsWriter.Append($"public partial class {_option.QueryName} : ObjectGraphType").AppendLine();
             clsWriter.Append("{").AppendLine();
-
-            var bodyWriter = clsWriter.Append('\t', 1).Block($"BODY__QUERY__");
-
-            bodyWriter.Append($"public {_option.QueryName}()").AppendLine().Append("{").AppendLine();
-            var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
 
             Dictionary<string, CodeWriter> slots = new Dictionary<string, CodeWriter>();
             foreach (var proto in Protos)
@@ -67,23 +57,9 @@ namespace Cybtans.Proto.Generators.CSharp
                 }
             }
 
-            foreach (var slot in slots)
-            {
-                methodWriter.AppendBlock(slot.Key, slot.Value);
-            }
-
-            bodyWriter.AppendLine().Append("}");
-            clsWriter.Append("}").AppendLine(2);
-
-            clsWriter.AppendTemplate(schemaTemplate, new Dictionary<string, object>
-            {
-                ["NAME"] = $"{_option.QueryName}Schema",
-                ["QUERY"] = _option.QueryName
-            });
-
+            AddFields(clsWriter, slots);
+          
             AddBlock("__Query__", clsWriter.ToString());
-
-
         }
 
         protected override void GenerateCode(ProtoFile proto)
@@ -163,17 +139,13 @@ namespace Cybtans.Proto.Generators.CSharp
                 {
                     methodWriter.Append($"Field<ListGraphType<{GetGraphTypeName(fieldType)}>>(\"{fieldName}\"");
                     AddNamedParameters(methodWriter, field);
-                }
-                else if (PrimitiveType.TimeStamp.Equals(fieldType))
-                {
-                    methodWriter.Append($"Field<TimeSpanSecondsGraphType>(\"{fieldName}\"");
-                    AddNamedParameters(methodWriter, field);
-                }
-                else if (PrimitiveType.Datetime == fieldType || PrimitiveType.TimeStamp == fieldType)
+                }                
+                else if (PrimitiveType.Datetime == fieldType || PrimitiveType.TimeStamp == fieldType || PrimitiveType.Duration == fieldType)
                 {
                     methodWriter.Append($"Field<DateTimeGraphType>(\"{fieldName}\"");
                     AddNamedParameters(methodWriter, field);
                 }
+               
                 else if (fieldType is IUserDefinedType)
                 {
                     methodWriter.Append($"Field<{GetGraphTypeName(fieldType)}>(\"{fieldName}\"");
@@ -326,12 +298,11 @@ namespace Cybtans.Proto.Generators.CSharp
             methodWriter.Append(")");
         }
 
-      
         private string GetGraphTypeName(ITypeDeclaration type)
         {
             if (type is IUserDefinedType)
             {
-                return $"{type.GetFullTypeName()}GraphType";
+                return $"{type.GetFullTypeName().Replace('.','_')}GraphType";
             }
             else if (type is PrimitiveType pt)
             {
@@ -362,7 +333,15 @@ namespace Cybtans.Proto.Generators.CSharp
         {
             foreach (var item in request.Fields)
             {
+                if (item.FieldType == PrimitiveType.Stream || PrimitiveType.Bytes.Equals(item.FieldType) || item.Type.IsMap)
+                    continue;
+
                 var graphQlType = GetGraphTypeName(item.FieldType);
+                if (item.Type.IsArray)
+                {
+                    graphQlType = $"ListGraphType<{graphQlType}>";
+                }
+
                 writer.Append('\t', tabs).Append($"new QueryArgument<{graphQlType}>(){{ Name = \"{item.GetFieldName()}\"");
                 if (item.Option.Description != null) 
                 {
@@ -399,18 +378,61 @@ namespace Cybtans.Proto.Generators.CSharp
                 case "google.protobuf.Int64Value": return "LongGraphType";
                 case "google.protobuf.UInt32Value": return "UIntGraphType";
                 case "google.protobuf.UInt64Value": return "ULongGraphType";
-                case "google.protobuf.StringValue": return "StringGraphType";                
+                case "google.protobuf.StringValue": return "StringGraphType";               
             }
 
             throw new InvalidOperationException($"Type {type.Name} not supported");
         }
-    
-        protected virtual string GetServiceName(ServiceDeclaration service)
+
+        protected abstract string GetServiceName(ServiceDeclaration service);
+
+        protected abstract void AddFields(CodeWriter clsWriter, Dictionary<string, CodeWriter> slots);
+
+    }
+
+    public class ServiceGraphQLGenerator: GraphQLGenerator
+    {
+        private readonly ServiceGeneratorOptions _serviceOptions ;
+
+        public ServiceGraphQLGenerator(ProtoFile entryPoint, 
+            IEnumerable<ProtoFile> protos,
+            ServiceGeneratorOptions serviceOptions,
+            ModelGeneratorOptions modelOptions) 
+            : base(entryPoint, protos, serviceOptions.GraphQLOptions, modelOptions)
         {
-            var serviceNs = _serviceOption.Namespace ?? $"{Proto.Option.Namespace ?? Proto.Filename.Pascal()}.Services";
-            return $"global::{serviceNs}.{_serviceOption.GetInterfaceName(service)}";
+            _serviceOptions  = serviceOptions;
         }
 
+        protected override string GetServiceName(ServiceDeclaration service)
+        {
+            var serviceNs = _serviceOptions.Namespace ?? $"{Proto.Option.Namespace ?? Proto.Filename.Pascal()}.Services";
+            return $"global::{serviceNs}.{_serviceOptions.GetInterfaceName(service)}";
+        }
+
+        protected override void AddFields(CodeWriter clsWriter, Dictionary<string, CodeWriter> slots)
+        {
+            var bodyWriter = clsWriter.Append('\t', 1).Block($"BODY__QUERY__");
+
+            // bodyWriter.Append($"public {_option.QueryName}()").AppendLine().Append("{").AppendLine();
+            bodyWriter.Append($"public void Add{Proto.Filename.Pascal()}Definitions()").AppendLine().Append("{").AppendLine();
+
+            var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
+
+            bodyWriter.AppendLine().Append("}");
+            clsWriter.Append("}").AppendLine(2);
+
+            foreach (var slot in slots)
+            {
+                methodWriter.AppendBlock(slot.Key, slot.Value);
+            }
+
+            //clsWriter.AppendTemplate(schemaTemplate, new Dictionary<string, object>
+            //{
+            //    ["NAME"] = $"{_option.QueryName}Schema",
+            //    ["QUERY"] = _option.QueryName
+            //});
+
+        }
         string schemaTemplate = @"
 public class @{NAME} : Schema
 {
@@ -421,5 +443,41 @@ public class @{NAME} : Schema
     }
 }
 ";
+    }
+
+    public class GatewayGraphQlGenerator : GraphQLGenerator
+    {
+        private readonly ClientGenerationOptions _clientOptions ;
+
+        public GatewayGraphQlGenerator(ProtoFile entryPoint, IEnumerable<ProtoFile> protos, 
+            ClientGenerationOptions clientOptions,
+            ApiGateWayGeneratorOption option, 
+            ModelGeneratorOptions modelOptions) 
+            : base(entryPoint, protos, option.GraphQLOptions, modelOptions)
+        {
+            _clientOptions  = clientOptions;
+        }
+
+        protected override void AddFields(CodeWriter clsWriter, Dictionary<string, CodeWriter> slots)
+        {
+            var bodyWriter = clsWriter.Append('\t', 1).Block($"BODY__QUERY__");
+
+            bodyWriter.Append($"public void Add{Proto.Filename.Pascal()}Definitions()").AppendLine().Append("{").AppendLine();
+
+            var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
+
+            bodyWriter.AppendLine().Append("}");
+            clsWriter.Append("}").AppendLine(2);
+
+            foreach (var slot in slots)
+            {
+                methodWriter.AppendBlock(slot.Key, slot.Value);
+            }
+        }
+
+        protected override string GetServiceName(ServiceDeclaration service)
+        {
+            return _clientOptions.GetClientName(service, Proto);
+        }
     }
 }

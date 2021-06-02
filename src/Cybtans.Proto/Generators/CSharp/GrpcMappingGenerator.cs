@@ -271,6 +271,14 @@ namespace Cybtans.Proto.Generators.CSharp
             {
                 return $"(mds::{fieldType.GetFullTypeName()}){fieldName}";
             }
+            else if (PrimitiveType.Bytes == fieldType)
+            {
+                return $"{fieldName}?.ToByteArray()";
+            }
+            else if (PrimitiveType.Stream == fieldType)
+            {
+                return $"{fieldName} != null ? new System.IO.MemoryStream({fieldName}.ToByteArray()) : null";
+            }
             else
             {
                 return fieldName;
