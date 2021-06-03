@@ -29,9 +29,9 @@ namespace Cybtans.Proto.Generator
                 return false;          
 
             var protoFile = Path.Combine(config.Path, step.ProtoFile);
-            if (step.SearchPath == null)
+            if (string.IsNullOrEmpty(step.SearchPath))
             {
-                step.SearchPath = Path.GetDirectoryName(protoFile);
+                step.SearchPath = config.Path; //Path.GetDirectoryName(protoFile);
             }
 
             if (string.IsNullOrEmpty(step.SearchPath))

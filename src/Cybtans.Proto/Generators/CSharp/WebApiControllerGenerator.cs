@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Cybtans.Proto.Generators.CSharp
 {
@@ -102,7 +100,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IActionInterceptor _interceptor;").AppendLine();
+                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor _interceptor;").AppendLine();
             }
             bodyWriter.AppendLine();
 
@@ -114,7 +112,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IActionInterceptor interceptor = null");
+                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor interceptor = null");
             }
 
             bodyWriter.Append(")").AppendLine();
@@ -327,7 +325,7 @@ if(Request.Headers.ContainsKey(""Accept"") && System.Net.Http.Headers.MediaTypeH
         string inteceptorTemplate = 
 @"if(_interceptor != null )
 {
-    await _interceptor.Handle(request, nameof(@{ACTION})).ConfigureAwait(false);
+    await _interceptor.Handle(request).ConfigureAwait(false);
 }";
     }
 }

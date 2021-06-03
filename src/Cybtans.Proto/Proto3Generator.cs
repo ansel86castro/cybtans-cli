@@ -70,7 +70,7 @@ namespace Cybtans.Proto
 
             foreach (var import in file.Imports.ToArray())
             {
-                if (ProtoFile.IsWhellKnowImport(import.Name))
+                if (ProtoFile.IsWhellKnowImport(import.Name) || ProtoFile.IsWhellKnowImport(import.Filename))
                 {
                     file.Imports.Remove(import);
                     continue;
