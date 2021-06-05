@@ -30,5 +30,12 @@ namespace Cybtans.Proto.Options
 
         [Field("service_description")]
         public string? ServiceDescription { get => Description; set => Description = value; }
+
+        [Field("attributes")]
+        public string? Attributes { get; set; }
+
+        [Field("srv_attributes")]
+        public string? SrvAttributes { get => Attributes; set => Attributes = value; }
+
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Antlr4.Runtime;
+using System.IO;
 
 namespace Cybtans.Proto.AST
 {
@@ -17,6 +18,8 @@ namespace Cybtans.Proto.AST
         public ImportType ImportType { get; set; }      
 
         public string Name { get; set; }
+
+        public string Filename => Path.GetFileName(Name);
 
         public override void CheckSemantic(Scope scope, IErrorReporter logger)
         {

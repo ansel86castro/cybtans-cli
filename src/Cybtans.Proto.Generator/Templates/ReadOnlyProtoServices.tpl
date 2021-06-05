@@ -17,13 +17,13 @@ service @{ENTITY}Service {
 
 	rpc GetAll(GetAllRequest) returns (GetAll@{ENTITY}Response){		
 		option method = "GET";
-		@{READ_POLICY}
+		@{GetAll_OPTIONS}
 	};
 
 	rpc Get(Get@{ENTITY}Request) returns (@{ENTITYDTO}){	
 		option template = "{@{ID}}"; 
 		option method = "GET";
-		@{READ_POLICY}
+		@{Get_OPTIONS}
 	};	
 }
 

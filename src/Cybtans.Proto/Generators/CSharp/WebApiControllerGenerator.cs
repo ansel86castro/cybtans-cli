@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Cybtans.Proto.Generators.CSharp
 {
@@ -56,15 +54,14 @@ namespace Cybtans.Proto.Generators.CSharp
 
             writer.Usings.Append("using System;").AppendLine();
             writer.Usings.Append("using System.Threading.Tasks;").AppendLine();
-            //writer.Usings.Append("using Microsoft.AspNetCore.Http;").AppendLine();
             writer.Usings.Append("using Microsoft.AspNetCore.Mvc;").AppendLine();
-            writer.Usings.Append("using Microsoft.Extensions.Logging;").AppendLine(); 
-            if (srvInfo.Service.Rpcs.Any(x => x.RequestType.HasStreams() || x.ResponseType.HasStreams() ))
+            writer.Usings.Append("using Microsoft.Extensions.Logging;").AppendLine();
+            if (srvInfo.Service.Rpcs.Any(x => x.RequestType.HasStreams() || x.ResponseType.HasStreams()))
             {
                 writer.Usings.Append("using Cybtans.AspNetCore;").AppendLine();
             }
 
-            writer.Usings.AppendLine().Append($"using mds = global::{_typeGenerator.Namespace};").AppendLine();                        
+            writer.Usings.AppendLine().Append($"using mds = global::{_typeGenerator.Namespace};").AppendLine();
 
             if (srv.Option.RequiredAuthorization || srv.Option.AllowAnonymous ||
                srv.Rpcs.Any(x => x.Option.RequiredAuthorization || x.Option.AllowAnonymous))
@@ -74,16 +71,10 @@ namespace Cybtans.Proto.Generators.CSharp
 
             #region  Class Name 
 
-            if (srvInfo.Service.Option.Description != null)
-            {
-                clsWriter.Append("/// <summary>").AppendLine();
-                clsWriter.Append("/// ").Append(srvInfo.Service.Option.Description).AppendLine();
-                clsWriter.Append("/// </summary>").AppendLine();
-                clsWriter.Append($"[System.ComponentModel.Description(\"{srvInfo.Service.Option.Description}\")]").AppendLine();
-            }
-
+            AddDescription(srvInfo, clsWriter);
+            AddAttributes(srv.Option.Attributes, clsWriter);
             AddAutorizationAttribute(srv.Option, clsWriter);
-            
+
             clsWriter.Append($"[Route(\"{srv.Option.Prefix}\")]").AppendLine();
             clsWriter.Append("[ApiController]").AppendLine();
             clsWriter.Append($"public partial class {srvInfo.Name}Controller : ControllerBase").AppendLine();
@@ -102,7 +93,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IActionInterceptor _interceptor;").AppendLine();
+                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor _interceptor;").AppendLine();
             }
             bodyWriter.AppendLine();
 
@@ -114,7 +105,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IActionInterceptor interceptor = null");
+                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor interceptor = null");
             }
 
             bodyWriter.Append(")").AppendLine();
@@ -147,15 +138,17 @@ namespace Cybtans.Proto.Generators.CSharp
                     bodyWriter.Append("/// <summary>").AppendLine();
                     bodyWriter.Append("/// ").Append(rpc.Option.Description).AppendLine();
                     bodyWriter.Append("/// </summary>").AppendLine();
-                    bodyWriter.Append($"[System.ComponentModel.Description(\"{rpc.Option.Description}\")]").AppendLine();
+                    bodyWriter.Append($"[System.ComponentModel.Description(\"{rpc.Option.Description.Scape()}\")]").AppendLine();
                 }
+
+                AddAttributes(rpc.Option.Attributes, bodyWriter);
 
                 AddAutorizationAttribute(options, bodyWriter);
 
                 AddRequestMethod(bodyWriter, options, template);
 
                 bodyWriter.AppendLine();
-                
+
                 if (request.HasStreams())
                 {
                     bodyWriter.Append("[DisableFormValueModelBinding]").AppendLine();
@@ -175,14 +168,40 @@ namespace Cybtans.Proto.Generators.CSharp
                 {
                     var path = request is MessageDeclaration ? _typeGenerator.GetMessageInfo(request).GetPathBinding(options.Template) : null;
                     if (path != null)
-                    {                        
+                    {
                         foreach (var field in path)
-                        {                            
+                        {
                             parametersWriter.Append($"{field.Type} {field.Field.Name}, ");
                             methodWriter.Append($"request.{field.Name} = {field.Field.Name};").AppendLine();
                         }
 
                         methodWriter.AppendLine();
+                    }
+                }
+
+                if (PrimitiveType.Void.Equals(request))
+                {
+                    methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
+                }
+                else
+                {
+                    if (!request.HasStreams())
+                    {
+                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}} {{Message}}\", nameof({rpcName}), request);").AppendLine(2);
+                    }
+                    else
+                    {
+                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
+                    }
+
+                    if (_option.UseActionInterceptor)
+                    {
+                        methodWriter.AppendTemplate(inteceptorTemplate, new Dictionary<string, object>
+                        {
+                            ["ACTION"] = rpcName
+                        }).AppendLine(2);
+
+                        //methodWriter.Append($"if(_interceptor != null )\r\n\tawait _interceptor.Handle(request, nameof({rpcName})).ConfigureAwait(false);").AppendLine(2);
                     }
                 }
 
@@ -214,11 +233,11 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 if (response.HasStreams())
                 {
-                    methodWriter.Append($"var result = await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);").AppendLine();
+                    methodWriter.Append($"var result = await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);").AppendLine();
 
                     var result = "result";
                     var contentType = $"\"{options.StreamOptions?.ContentType ?? "application/octet-stream"}\"";
-                    
+
                     var fileName = options.StreamOptions?.Name;
                     fileName = fileName != null ? $"\"{fileName}\"" : "Guid.NewGuid().ToString()";
 
@@ -226,16 +245,16 @@ namespace Cybtans.Proto.Generators.CSharp
                     {
                         var name = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.String && x.Name.ToLowerInvariant().EndsWith("name"));
                         var type = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.String && x.Name.ToLowerInvariant() == "contenttype" || x.Name.ToLowerInvariant() == "content_type");
-                        if(name!= null)                        
-                            fileName = $"result.{name.GetFieldName()}";                            
-                        if(type!= null)
+                        if (name != null)
+                            fileName = $"result.{name.GetFieldName()}";
+                        if (type != null)
                             contentType = $"result.{type.GetFieldName()}";
 
                         methodWriter.AppendTemplate(streamReturnTemplate, new Dictionary<string, object>())
                             .AppendLine();
 
                         var stream = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.Stream);
-                        if(stream != null)
+                        if (stream != null)
                         {
                             result = $"result.{stream.GetFieldName()}";
                         }
@@ -250,13 +269,36 @@ namespace Cybtans.Proto.Generators.CSharp
                         methodWriter.Append($"return ");
                     }
 
-                    methodWriter.Append($"await _service.{rpcName}({( !PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");
+                    methodWriter.Append($"await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");
                 }
             }
 
             clsWriter.Append("}").AppendLine();
             writer.Save($"{srvInfo.Name}Controller");
         }
+
+        private static void AddDescription(ServiceGenInfo srvInfo, CodeWriter clsWriter)
+        {
+            if (srvInfo.Service.Option.Description != null)
+            {
+                clsWriter.Append("/// <summary>").AppendLine();
+                clsWriter.Append("/// ").Append(srvInfo.Service.Option.Description).AppendLine();
+                clsWriter.Append("/// </summary>").AppendLine();
+                clsWriter.Append($"[System.ComponentModel.Description(\"{srvInfo.Service.Option.Description.Scape()}\")]").AppendLine();
+            }
+        }
+
+        private static void AddAttributes(string attributes, CodeWriter writer)
+        {
+            if (attributes != null)
+            {                
+                foreach (var item in attributes.GetAttributeList())
+                {
+                    writer.Append($"[{item}]").AppendLine();
+                }                
+            }
+        }
+
 
         private static void AddRequestMethod(CodeWriter bodyWriter, RpcOptions options, string template)
         {
@@ -327,7 +369,7 @@ if(Request.Headers.ContainsKey(""Accept"") && System.Net.Http.Headers.MediaTypeH
         string inteceptorTemplate = 
 @"if(_interceptor != null )
 {
-    await _interceptor.Handle(request, nameof(@{ACTION})).ConfigureAwait(false);
+    await _interceptor.Handle(request).ConfigureAwait(false);
 }";
     }
 }

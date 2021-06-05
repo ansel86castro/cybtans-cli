@@ -29,9 +29,9 @@ namespace Cybtans.Proto.Generator
                 return false;          
 
             var protoFile = Path.Combine(config.Path, step.ProtoFile);
-            if (step.SearchPath == null)
+            if (string.IsNullOrEmpty(step.SearchPath))
             {
-                step.SearchPath = Path.GetDirectoryName(protoFile);
+                step.SearchPath = config.Path; //Path.GetDirectoryName(protoFile);
             }
 
             if (string.IsNullOrEmpty(step.SearchPath))
@@ -54,22 +54,34 @@ namespace Cybtans.Proto.Generator
                     Namespace = step.Models?.Namespace,
                     GenerateAccesor = step.Models?.UseCytansSerialization ?? true
                 } : null,
+
                 ServiceOptions = ast.HaveServices ? new ServiceGeneratorOptions()
                 {
                     OutputPath = Path.Combine(config.Path, step.Services?.Output ?? $"{step.Output}/{config.Service}.Services/Generated"),
-                    Namespace = step.Services?.Namespace,   
+                    Namespace = step.Services?.Namespace,
                     NameTemplate = step.Services?.NameTemplate,
-                    AutoRegisterImplementation = step.Services?.Grpc?.AutoRegister ?? false,   
+                    AutoRegisterImplementation = step.Services?.Grpc?.AutoRegister ?? false,
                     ImplementationNamespace = step.Services?.Grpc?.Namespace,
-                    ImplementationOutput = Path.Combine(config.Path, step.Services?.Grpc.Output ?? $"{step.Output}/{config.Service}.Services/Generated")
-                } : null,                
+                    ImplementationOutput = Path.Combine(config.Path, step.Services?.Grpc?.Output ?? $"{step.Output}/{config.Service}.Services/Generated")                   
+                } : null,                               
             };
 
             if(options.ServiceOptions != null)
             {
+                if (step.Services?.GraphQL != null && step.Services.GraphQL.Generate)
+                {
+                    options.ServiceOptions.GraphQLOptions = new GraphQLGeneratorOptions
+                    {
+                        OutputPath = Path.Combine(config.Path, step.Services.GraphQL?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/GraphQL"),
+                        Namespace = step.Services.GraphQL.Namespace ?? $"{config.Service}.GraphQL",
+                        QueryName = step.Services.GraphQL.QueryName ?? $"{ast.Filename.Pascal()}QueryDefinitions",
+                        Explicit = step.Services.GraphQL.Explicit
+                    };
+                }
+
                 options.ControllerOptions = new WebApiControllerGeneratorOption()
                 {
-                    OutputPath = Path.Combine(config.Path, step.Controllers?.Output ?? $"{step.Output}/{config.Service}.RestApi/Controllers/Generated"),
+                    OutputPath = Path.Combine(config.Path, step.Controllers?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/Controllers"),
                     Namespace = step.Controllers?.Namespace,
                     UseActionInterceptor = step.Controllers?.UseActionInterceptor ?? false
                 };
@@ -85,15 +97,27 @@ namespace Cybtans.Proto.Generator
                 }
             }
 
-            if (!string.IsNullOrEmpty(step.Gateway) || step.GatewayOptions != null)
+            if (step.ApiGateway != null)
             {
                 options.ApiGatewayOptions = new ApiGateWayGeneratorOption
                 {
-                    OutputPath = Path.Combine(config.Path, step.GatewayOptions?.Output ?? step.Gateway),
-                    Namespace = step.GatewayOptions?.Namespace ?? $"{config.Service}.Controllers",
-                    UseActionInterceptor = step.GatewayOptions?.UseActionInterceptor ?? false
+                    OutputPath = Path.Combine(config.Path, step.ApiGateway?.Output),
+                    Namespace = step.ApiGateway?.Namespace ?? $"{config.Service}.Controllers",
+                    UseActionInterceptor = step.ApiGateway?.UseActionInterceptor ?? false
                 };
-            }
+                if(step.ApiGateway?.GraphQL != null && step.ApiGateway.Generate)
+                {
+                    var gateway = step.ApiGateway;
+                    options.ApiGatewayOptions.GraphQLOptions =  new GraphQLGeneratorOptions
+                    {
+                        OutputPath = Path.Combine(config.Path, gateway.GraphQL?.Output ?? $"{step.ApiGateway?.Output}"),
+                        Namespace = gateway.GraphQL.Namespace ?? $"{options.ApiGatewayOptions.Namespace}.GraphQL",
+                        QueryName = gateway.GraphQL.QueryName ?? $"GraphQLQueryDefinitions",
+                        Explicit = gateway.GraphQL.Explicit
+                    };
+                }
+            }         
+
             MicroserviceGenerator microserviceGenerator = new MicroserviceGenerator(options);            
 
             microserviceGenerator.GenerateCode(ast, scope);            

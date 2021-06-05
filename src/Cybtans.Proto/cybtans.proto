@@ -20,6 +20,10 @@ extend google.protobuf.MethodOptions {
 
   //valid values are "request", "response", "all"
   string grpc_mapping = 640006;
+
+  GraphQlOptions graphql = 640007;
+
+  string rpc_attributes = 640008;
 }
 
 
@@ -58,10 +62,11 @@ extend google.protobuf.MessageOptions {
 
 extend google.protobuf.ServiceOptions {
 	string prefix  = 645001;
-	string service_description = 645002;
-	Security service_security = 645003;
+	string srv_description = 645002;
+	Security srv_security = 645003;
 	bool grpc_proxy = 645004;
 	string grpc_proxy_name = 645005;
+	string srv_attributes = 645006;
 }
 
 message Security {
@@ -80,4 +85,8 @@ message Security {
 
 message ByteStream {
 	// Stream in C#, Blob in javascript
+}
+
+message GraphQlOptions {
+	string query = 647001;
 }

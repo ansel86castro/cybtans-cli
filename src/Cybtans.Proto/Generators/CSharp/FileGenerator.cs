@@ -34,7 +34,7 @@ namespace Cybtans.Proto.Generators.CSharp
             GenerateCode(_proto);
         }
 
-        protected virtual void GenerateCode(ProtoFile item) { }
+        protected virtual void GenerateCode(ProtoFile proto) { }
 
         public string OuputPath => _option.OutputPath ?? Environment.CurrentDirectory;
 

@@ -14,10 +14,10 @@ namespace Cybtans.Proto
 
     public class SearchPathFileResolverFactory : IFileResolverFactory
     {
-        DirectoryInfo[] directorys;
+        DirectoryInfo[] directories;
         public SearchPathFileResolverFactory(string[] searchPath)
         {
-            directorys = searchPath.Select(x => new DirectoryInfo(x)).ToArray();
+            directories = searchPath.Select(x => new DirectoryInfo(x)).ToArray();
         }
 
         public IFileResolver GetResolver(string baseDirectory)
@@ -26,7 +26,7 @@ namespace Cybtans.Proto
             {
                 baseDirectory = Environment.CurrentDirectory;
             }
-            return new SearchPathFileResolver(new DirectoryInfo(baseDirectory), directorys);
+            return new SearchPathFileResolver(new DirectoryInfo(baseDirectory), directories);
         }
     }
 

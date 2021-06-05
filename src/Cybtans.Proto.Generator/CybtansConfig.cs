@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Net.Http.Headers;
 
 namespace Cybtans.Proto.Generator
 {
@@ -52,9 +53,7 @@ namespace Cybtans.Proto.Generator
 
         public string SearchPath { get; set; }
 
-        public StepClientOptions Typecript { get; set; }
-
-        public string Gateway { get; set; }
+        public StepClientOptions Typecript { get; set; }        
 
         public CSharpModelGenerationOption Models { get; set; }
 
@@ -64,7 +63,7 @@ namespace Cybtans.Proto.Generator
 
         public CSharpControllerGenerationOption Controllers { get; set; }
 
-        public CSharpGatewayGenerationOptions GatewayOptions { get; set; }
+        public CSharpGatewayGenerationOptions ApiGateway { get; set; }
 
         public List<StepClientOptions> Clients { get; set; } = new List<StepClientOptions>();
 
@@ -78,6 +77,8 @@ namespace Cybtans.Proto.Generator
         public GrpcCompatibility Grpc { get; set; } = new GrpcCompatibility();       
         
         public string NameTemplate { get; set; }
+
+        public bool  GenerateGraphQLQuery { get; set; }
 
         #endregion
     }
@@ -108,7 +109,10 @@ namespace Cybtans.Proto.Generator
         public string NameTemplate { get; set; }
 
         public GrpcProxy Grpc { get; set; }
-        
+
+        public GraphQLStepOptions GraphQL { get; set; }
+
+
         public class GrpcProxy: CSharpStepOption
         {
             public bool AutoRegister { get; set; }
@@ -123,12 +127,20 @@ namespace Cybtans.Proto.Generator
 
     public class CSharpGatewayGenerationOptions: CSharpControllerGenerationOption
     {
+        public GraphQLStepOptions GraphQL { get; set; }
 
     }
 
     public class CSharpClientStepOptions: CSharpStepOption
     {
         public string Prefix { get; set; }
+    }
+
+    public class GraphQLStepOptions : CSharpStepOption
+    {
+        public bool Explicit { get; set; }
+
+        public string QueryName { get; set; }
     }
 
     public class StepClientOptions : StepOption

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
 namespace Cybtans.Proto.Utils
@@ -113,6 +114,34 @@ namespace Cybtans.Proto.Utils
             }
 
             return result;
+        }
+
+        public static string Pluralize(this string s)
+        {
+            if (s.EndsWith('y'))
+            {
+                return s[0..^1] + "ies";
+            }
+            else if (!s.EndsWith('s'))
+            {
+                return s + "s";
+            }
+            else
+            {
+                return s;
+            }
+        }
+
+        public static string Scape(this string s)
+        {
+            return s.Replace("\"", "\\\"");
+        }
+
+        public static string[] GetAttributeList(this string s)
+        {
+            var items = s.Split(";");
+            return items.Select(x => x.Trim()).ToArray();
+            
         }
     }
 }

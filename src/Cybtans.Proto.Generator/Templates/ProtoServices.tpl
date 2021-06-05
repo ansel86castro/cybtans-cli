@@ -29,31 +29,31 @@ service @{ENTITY}Service {
 	option (prefix) ="api/@{ENTITY}";
 
 	rpc GetAll(GetAllRequest) returns (GetAll@{ENTITY}Response){		
-		option method = "GET";
-		@{READ_POLICY}
+		option (method) = "GET";
+		@{GetAll_OPTIONS}
 	};
 
 	rpc Get(Get@{ENTITY}Request) returns (@{ENTITYDTO}){	
-		option template = "{@{ID}}"; 
-		option method = "GET";
-		@{READ_POLICY}
+		option (template) = "{@{ID}}"; 
+		option (method) = "GET";
+		@{Get_OPTIONS}
 	};
 
 	rpc Create(Create@{ENTITY}Request) returns (@{ENTITYDTO}){			
-		option method = "POST";
-		@{WRITE_POLICY}
+		option (method) = "POST";
+		@{Create_OPTIONS}
 	};
 
 	rpc Update(Update@{ENTITY}Request) returns (@{ENTITYDTO}){			
-		option template = "{@{ID}}"; 
-		option method = "PUT";
-		@{WRITE_POLICY}
+		option (template) = "{@{ID}}"; 
+		option (method) = "PUT";
+		@{Update_OPTIONS}
 	};
 
 	rpc Delete(Delete@{ENTITY}Request) returns (void){
-		option template = "{@{ID}}"; 
-		option method = "DELETE";
-		@{WRITE_POLICY}
+		option (template) = "{@{ID}}"; 
+		option (method) = "DELETE";
+		@{Delete_OPTIONS}
 	};
 }
 

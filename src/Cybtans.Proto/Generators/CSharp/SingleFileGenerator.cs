@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Cybtans.Proto.Generators.CSharp
 {
-    public abstract class SingleFileGenerator<T>:FileGenerator<T>
+    public abstract class SingleFileGenerator<T>: FileGenerator<T>
         where T: CodeGenerationOption
     {       
         protected readonly Dictionary<string, string> _blocks = new Dictionary<string, string>();

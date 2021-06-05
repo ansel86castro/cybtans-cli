@@ -65,6 +65,11 @@ namespace Cybtans.Proto.AST
                     || FieldType == PrimitiveType.Bytes
                     || FieldType == PrimitiveType.Stream
                     || FieldType == PrimitiveType.Object
+                    || (FieldType is PrimitiveType p && p.IsNullableValue) 
+                    || FieldType == PrimitiveType.BytesValue
+                    || FieldType == PrimitiveType.StringValue
+                    || FieldType == PrimitiveType.TimeStamp
+                    || FieldType == PrimitiveType.Duration
                 );
             }
         }
