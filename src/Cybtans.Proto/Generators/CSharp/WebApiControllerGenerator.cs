@@ -205,6 +205,32 @@ namespace Cybtans.Proto.Generators.CSharp
                     }
                 }
 
+                if (PrimitiveType.Void.Equals(request))
+                {
+                    methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
+                }
+                else
+                {
+                    if (!request.HasStreams())
+                    {
+                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}} {{Message}}\", nameof({rpcName}), request);").AppendLine(2);
+                    }
+                    else
+                    {                        
+                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
+                    }
+
+                    if (_option.UseActionInterceptor)
+                    {
+                        methodWriter.AppendTemplate(inteceptorTemplate, new Dictionary<string, object>
+                        {
+                            ["ACTION"] = rpcName
+                        }).AppendLine(2);
+
+                        //methodWriter.Append($"if(_interceptor != null )\r\n\tawait _interceptor.Handle(request, nameof({rpcName})).ConfigureAwait(false);").AppendLine(2);
+                    }
+                }                
+
                 if (response.HasStreams())
                 {
                     methodWriter.Append($"var result = await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);").AppendLine();
@@ -235,7 +261,7 @@ namespace Cybtans.Proto.Generators.CSharp
                     }
 
                     methodWriter.Append($"return new FileStreamResult({result}, {contentType}) {{ FileDownloadName = {fileName} }};");
-                }
+                }                
                 else
                 {
                     if (!PrimitiveType.Void.Equals(response))

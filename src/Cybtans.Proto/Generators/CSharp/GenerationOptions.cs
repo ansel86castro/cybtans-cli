@@ -96,4 +96,9 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public bool Explicit { get; set; }
     }
+
+    public class ClientGenerationOptions : TypeGeneratorOption
+    {
+        public string Prefix { get; set; }
+    }
 }
