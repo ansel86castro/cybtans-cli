@@ -89,7 +89,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 clsWriter.Append("/// <summary>").AppendLine();
                 clsWriter.Append("/// ").Append(msg.Option.Description).AppendLine();
                 clsWriter.Append("/// </summary>").AppendLine();
-                clsWriter.Append($"[Description(\"{msg.Option.Description}\")]").AppendLine();
+                clsWriter.Append($"[Description(\"{msg.Option.Description.Scape()}\")]").AppendLine();
             }
 
             if (msg.Option.Deprecated)
@@ -171,7 +171,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 if (field.Option.Description != null)
                 {
-                    bodyWriter.Append($"[Description(\"{field.Option.Description}\")]").AppendLine();
+                    bodyWriter.Append($"[Description(\"{field.Option.Description.Scape()}\")]").AppendLine();
                 }
 
                 bodyWriter

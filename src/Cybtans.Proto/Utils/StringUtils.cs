@@ -131,5 +131,17 @@ namespace Cybtans.Proto.Utils
                 return s;
             }
         }
+
+        public static string Scape(this string s)
+        {
+            return s.Replace("\"", "\\\"");
+        }
+
+        public static string[] GetAttributeList(this string s)
+        {
+            var items = s.Split(";");
+            return items.Select(x => x.Trim()).ToArray();
+            
+        }
     }
 }

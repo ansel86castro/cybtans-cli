@@ -45,6 +45,12 @@ namespace Cybtans.Proto.Options
         [Field("graphql")]
         public GraphQlOptions GraphQl { get; set; }
 
+        [Field("attributes")]
+        public string? Attributes { get; set; }
+
+        [Field("rpc_attributes")]
+        public string? RpcAttributes { get => Attributes; set => Attributes = value; }
+
     }
 
     public class StreamOptions: ProtobufOption
