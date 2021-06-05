@@ -63,7 +63,7 @@ namespace Cybtans.Proto.Generator
 
         public CSharpControllerGenerationOption Controllers { get; set; }
 
-        public CSharpGatewayGenerationOptions GatewayOptions { get; set; }
+        public CSharpGatewayGenerationOptions ApiGateway { get; set; }
 
         public List<StepClientOptions> Clients { get; set; } = new List<StepClientOptions>();
 
