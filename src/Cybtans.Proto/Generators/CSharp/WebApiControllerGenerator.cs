@@ -93,7 +93,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor _interceptor;").AppendLine();
+                bodyWriter.Append($"private readonly {_option.GetInterceptorType()} _interceptor;").AppendLine();
             }
             bodyWriter.AppendLine();
 
@@ -105,7 +105,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor interceptor = null");
+                bodyWriter.Append($", {_option.GetInterceptorType()} interceptor = null");
             }
 
             bodyWriter.Append(")").AppendLine();
@@ -191,32 +191,6 @@ namespace Cybtans.Proto.Generators.CSharp
                     }
                     else
                     {
-                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
-                    }
-
-                    if (_option.UseActionInterceptor)
-                    {
-                        methodWriter.AppendTemplate(inteceptorTemplate, new Dictionary<string, object>
-                        {
-                            ["ACTION"] = rpcName
-                        }).AppendLine(2);
-
-                        //methodWriter.Append($"if(_interceptor != null )\r\n\tawait _interceptor.Handle(request, nameof({rpcName})).ConfigureAwait(false);").AppendLine(2);
-                    }
-                }
-
-                if (PrimitiveType.Void.Equals(request))
-                {
-                    methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
-                }
-                else
-                {
-                    if (!request.HasStreams())
-                    {
-                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}} {{Message}}\", nameof({rpcName}), request);").AppendLine(2);
-                    }
-                    else
-                    {                        
                         methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
                     }
 

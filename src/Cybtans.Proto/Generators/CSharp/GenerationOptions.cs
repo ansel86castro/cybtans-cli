@@ -71,7 +71,24 @@ namespace Cybtans.Proto.Generators.CSharp
 
     public class WebApiControllerGeneratorOption: TypeGeneratorOption
     {
+        private string _interceptorType;
+
         public bool UseActionInterceptor { get; set; } = true;
+
+        public string InterceptorType
+        {
+            get => _interceptorType;
+            set
+            {
+                UseActionInterceptor = UseActionInterceptor || !string.IsNullOrEmpty(value);
+                _interceptorType = value;
+            }
+        }
+
+        public string GetInterceptorType()
+        {
+            return InterceptorType ?? "global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor";
+        }
     }
 
     public class ApiGateWayGeneratorOption : WebApiControllerGeneratorOption
