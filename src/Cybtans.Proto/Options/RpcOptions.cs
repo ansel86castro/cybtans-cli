@@ -36,14 +36,14 @@ namespace Cybtans.Proto.Options
         /// valid values are "request", "response", "all"
         /// </summary>
         [Field("grpc_mapping")]
-        public string GrpcMapping { get; set; }
+        public string? GrpcMapping { get; set; }
 
         public bool GrpcMappingRequest => GrpcMapping == "request" || GrpcMapping == "all";
 
         public bool GrpcMappingResponse => GrpcMapping == "response" || GrpcMapping == "all";
 
         [Field("graphql")]
-        public GraphQlOptions GraphQl { get; set; }
+        public GraphQlOptions? GraphQl { get; set; }
 
         [Field("attributes")]
         public string? Attributes { get; set; }
@@ -51,6 +51,8 @@ namespace Cybtans.Proto.Options
         [Field("rpc_attributes")]
         public string? RpcAttributes { get => Attributes; set => Attributes = value; }
 
+        [Field("auth")]
+        public AuthOptions? AuthOptions { get; set; }
     }
 
     public class StreamOptions: ProtobufOption
@@ -91,5 +93,16 @@ namespace Cybtans.Proto.Options
 
         [Field("query")]
         public string? Query { get; set; }
+    }
+
+    public class AuthOptions : ProtobufOption
+    {
+        public AuthOptions() : base(OptionsType.Rpc) { }
+
+        [Field("request")]
+        public string? RequestPolicy { get; set; }
+
+        [Field("result")]
+        public string? ResultPolicy { get; set; }
     }
 }
