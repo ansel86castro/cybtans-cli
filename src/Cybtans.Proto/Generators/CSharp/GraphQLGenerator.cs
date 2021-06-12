@@ -206,7 +206,9 @@ namespace Cybtans.Proto.Generators.CSharp
                 if (!PrimitiveType.Void.Equals(request))
                 {
                     methodWriter.Append("\targuments: new QueryArguments()\r\n\t{\r\n");
+
                     AddArguments(request as MessageDeclaration, methodWriter, 2);
+                    
                     methodWriter.Append("\t},\r\n");
                 }
 
@@ -216,18 +218,14 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 methodWriter.Append('\t', 1).Append("resolve: async context =>\r\n\t{\r\n");
 
-                var resolveWriter = methodWriter.Append('\t', 2).Block($"RESOLVER_{queryName}");
-
-                #region Security
-
-                AddSecurity(service, rpc, resolveWriter);
-
-                #endregion
+                var resolveWriter = methodWriter.Append('\t', 2).Block($"RESOLVER_{queryName}");                               
 
                 if (!PrimitiveType.Void.Equals(request))
                 {
                     var requestMsg = (MessageDeclaration)request;
+                    
                     resolveWriter.Append($"var request = new {requestMsg.GetTypeName()}();").AppendLine();
+
                     foreach (var field in requestMsg.Fields)
                     {
                         resolveWriter.Append($"request.{field.GetFieldName()} = context.GetArgument<{field.GetFieldTypeName()}>(\"{field.Name.Camel()}\", default({field.GetFieldTypeName()}));").AppendLine();
@@ -235,16 +233,16 @@ namespace Cybtans.Proto.Generators.CSharp
                     resolveWriter.AppendLine();
                 }
 
+                AddSecurity(service, rpc, resolveWriter);
+
                 resolveWriter.Append($"var service = context.RequestServices.GetRequiredService<{GetServiceName(service)}>();").AppendLine();
 
-                if (!PrimitiveType.Void.Equals(request))
-                {
-                    resolveWriter.Append($"return await service.{rpc.Name}(request);").AppendLine();
-                }
-                else
-                {
-                    resolveWriter.Append($"return await service.{rpc.Name}();").AppendLine();
-                }
+                var arg = !PrimitiveType.Void.Equals(request) ? "request" : "";
+                resolveWriter.Append($"var result = await service.{rpc.Name}({arg}).ConfigureAwait(false);").AppendLine();
+
+                AddResultSecurity(service, rpc, resolveWriter);
+
+                resolveWriter.Append("return result;").AppendLine();
 
                 #endregion
 
@@ -257,8 +255,8 @@ namespace Cybtans.Proto.Generators.CSharp
 
         private static void AddSecurity(ServiceDeclaration service, RpcDeclaration rpc, CodeWriter resolveWriter)
         {
-            if (!service.Option.RequiredAuthorization && !rpc.Option.RequiredAuthorization)
-                return;
+            if (!service.Option.RequiredAuthorization && !rpc.Option.RequiredAuthorization  )
+                return ;
 
             resolveWriter.Append("var httpContext = context.RequestServices.GetRequiredService<IHttpContextAccessor>().HttpContext;").AppendLine();
 
@@ -275,14 +273,58 @@ namespace Cybtans.Proto.Generators.CSharp
                 resolveWriter.Append($"if ({roleChek})\r\n{{\r\n\t throw new UnauthorizedAccessException(\"Roles Authorization Required\");\r\n}}").AppendLine();
             }
 
-            if (!string.IsNullOrEmpty(rpc.Option.Policy) || !string.IsNullOrEmpty(service.Option.Policy))
-            {
-                resolveWriter.Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine();
-                resolveWriter.Append($"var authorizationResult = await authorizationService.AuthorizeAsync(httpContext.User, \"{rpc.Option.Policy ?? service.Option.Policy}\");").AppendLine();
-                resolveWriter.Append("if (!authorizationResult.Succeeded)\r\n{\r\n\t throw new UnauthorizedAccessException(\"Policy Authorization Required\");\r\n}").AppendLine();
+            bool authorizationServiceResolved = !string.IsNullOrEmpty(rpc.Option.Policy) || !string.IsNullOrEmpty(service.Option.Policy);
+            if (authorizationServiceResolved)
+            {                
+                resolveWriter.Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine(); 
+                resolveWriter.Append($"var policyResult = await authorizationService.AuthorizeAsync(httpContext.User, httpContext, \"{rpc.Option.Policy ?? service.Option.Policy}\").ConfigureAwait(false);").AppendLine();                
+                resolveWriter.Append($"if (!policyResult.Succeeded)\r\n{{\r\n\t throw new UnauthorizedAccessException($\"Authorization Failed: {{ string.Join(\", \", policyResult.Failure.FailedRequirements) }}\");\r\n}}").AppendLine();
             }
 
             resolveWriter.AppendLine();
+
+            if(rpc.Option.AuthOptions?.RequestPolicy != null && !PrimitiveType.Void.Equals(rpc.RequestType))
+            {
+                if (!authorizationServiceResolved)
+                {
+                    authorizationServiceResolved = true;
+                    resolveWriter.Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine();
+                    resolveWriter.Append("var ");
+                }
+                
+                resolveWriter.Append($"policyResult = await authorizationService.AuthorizeAsync(httpContext.User, request, \"{rpc.Option.AuthOptions.RequestPolicy}\").ConfigureAwait(false);").AppendLine();
+                resolveWriter.Append($"if (!policyResult.Succeeded)\r\n{{\r\n\t throw new UnauthorizedAccessException($\"Request Authorization Failed: {{ string.Join(\", \", policyResult.Failure.FailedRequirements) }}\");\r\n}}").AppendLine();
+
+                resolveWriter.AppendLine();
+            }           
+        }
+
+        private void AddResultSecurity(ServiceDeclaration service, RpcDeclaration rpc, CodeWriter resolveWriter)
+        {
+            if (rpc.Option.AuthOptions?.ResultPolicy == null)
+                return;
+
+            bool authorizationServiceResolved = !string.IsNullOrEmpty(rpc.Option.Policy) 
+                || !string.IsNullOrEmpty(service.Option.Policy)
+                || (rpc.Option.AuthOptions?.RequestPolicy != null && !PrimitiveType.Void.Equals(rpc.RequestType));
+
+            resolveWriter.Append("if (result != null)\r\n{\r\n");
+            if (!authorizationServiceResolved)
+            {
+                resolveWriter.Append('\t',1).Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine();
+                resolveWriter.Append('\t',1).Append("var ");
+            }
+            else
+            {
+                resolveWriter.Append('\t', 1);
+            }
+
+            resolveWriter.Append($"policyResult = await authorizationService.AuthorizeAsync(httpContext.User, result, \"{rpc.Option.AuthOptions.ResultPolicy}\").ConfigureAwait(false);").AppendLine();
+            resolveWriter.Append('\t', 1).Append($"if (!policyResult.Succeeded)\r\n\t{{\r\n\t\t throw new UnauthorizedAccessException($\"Result Authorization Failed: {{ string.Join(\", \", policyResult.Failure.FailedRequirements) }}\");\r\n\t}}").AppendLine();
+
+            resolveWriter.Append("}").AppendLine();
+            resolveWriter.AppendLine();
+
         }
 
         private static void AddNamedParameters(CodeWriter methodWriter, FieldDeclaration field)
@@ -342,10 +384,25 @@ namespace Cybtans.Proto.Generators.CSharp
                     graphQlType = $"ListGraphType<{graphQlType}>";
                 }
 
-                writer.Append('\t', tabs).Append($"new QueryArgument<{graphQlType}>(){{ Name = \"{item.GetFieldName()}\"");
+                if (item.Option.Required)
+                {
+                    writer.Append('\t', tabs).Append($"new QueryArgument<NonNullGraphType<{graphQlType}>>(){{ Name = \"{item.GetFieldName()}\"");
+                }
+                else
+                {
+                    writer.Append('\t', tabs).Append($"new QueryArgument<{graphQlType}>(){{ Name = \"{item.GetFieldName()}\"");
+                }
+
                 if (item.Option.Description != null) 
                 {
                     writer.Append($", Description = \"{item.Option.Description}\"");
+                }
+                if(item.Option.Default != null)
+                {                    
+                    if(item.Option.Default is string)
+                        writer.Append($", DefaultValue = \"{item.Option.Default}\"");
+                    else
+                        writer.Append($", DefaultValue = {item.Option.Default}");
                 }
                 writer.Append(" },").AppendLine();
             }

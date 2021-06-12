@@ -53,6 +53,8 @@ namespace Cybtans.Proto.Options
 
         [Field("auth")]
         public AuthOptions? AuthOptions { get; set; }
+
+        public override bool RequiredAuthorization => base.RequiredAuthorization || AuthOptions != null;
     }
 
     public class StreamOptions: ProtobufOption

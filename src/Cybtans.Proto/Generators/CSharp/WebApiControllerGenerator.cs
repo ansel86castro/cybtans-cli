@@ -382,10 +382,13 @@ if (!authRequestResult.Succeeded)
         {
             if (authOptions?.ResultPolicy == null) return;
 
-            writer.Append($@"var authResult = await _authorizationService.AuthorizeAsync(User, result, ""{authOptions.ResultPolicy}"").ConfigureAwait(false);
-if (!authResult.Succeeded)
+            writer.Append($@"if (result != null)
 {{
-    throw new UnauthorizedAccessException($""Result Authorization Failed: {{ string.Join("", "", authResult.Failure.FailedRequirements) }}"");
+    var authResult = await _authorizationService.AuthorizeAsync(User, result, ""{authOptions.ResultPolicy}"").ConfigureAwait(false);
+    if (!authResult.Succeeded)
+    {{
+        throw new UnauthorizedAccessException($""Result Authorization Failed: {{ string.Join("", "", authResult.Failure.FailedRequirements) }}"");
+    }}
 }}");
             writer.AppendLine(2);
         }
