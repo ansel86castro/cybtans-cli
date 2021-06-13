@@ -80,6 +80,8 @@ namespace Cybtans.Proto.Generator
 
         public bool  GenerateGraphQLQuery { get; set; }
 
+        public string AutoMapperOutput { get; set; }
+
         #endregion
     }
 
@@ -123,6 +125,8 @@ namespace Cybtans.Proto.Generator
     public class CSharpControllerGenerationOption : CSharpStepOption
     {
         public bool UseActionInterceptor { get; set; }
+
+        public string InterceptorType { get; set; }
     }
 
     public class CSharpGatewayGenerationOptions: CSharpControllerGenerationOption

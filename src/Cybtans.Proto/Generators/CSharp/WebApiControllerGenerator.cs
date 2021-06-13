@@ -93,8 +93,16 @@ namespace Cybtans.Proto.Generators.CSharp
 
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append("private readonly global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor _interceptor;").AppendLine();
+                bodyWriter.Append($"private readonly {_option.GetInterceptorType()} _interceptor;").AppendLine();
             }
+
+            bool requireAuthorizationService = srv.Rpcs.Any(x => x.Option.AuthOptions?.RequestPolicy != null || x.Option.AuthOptions?.ResultPolicy != null);
+            if (requireAuthorizationService)
+            {
+                bodyWriter.Append($"private readonly global::Microsoft.AspNetCore.Authorization.IAuthorizationService _authorizationService;").AppendLine();
+            }
+
+
             bodyWriter.AppendLine();
 
             #endregion
@@ -103,10 +111,15 @@ namespace Cybtans.Proto.Generators.CSharp
 
             bodyWriter.Append($"public {srvInfo.Name}Controller({serviceType} service,  ILogger<{srvInfo.Name}Controller> logger");
 
+            if (requireAuthorizationService)
+            {
+                bodyWriter.Append($", global::Microsoft.AspNetCore.Authorization.IAuthorizationService authorizationService");
+            }
+
             if (_option.UseActionInterceptor)
             {
-                bodyWriter.Append(", global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor interceptor = null");
-            }
+                bodyWriter.Append($", {_option.GetInterceptorType()} interceptor = null");
+            }          
 
             bodyWriter.Append(")").AppendLine();
 
@@ -117,6 +130,10 @@ namespace Cybtans.Proto.Generators.CSharp
             if (_option.UseActionInterceptor)
             {
                 bodyWriter.Append('\t', 1).Append("_interceptor = interceptor;").AppendLine();
+            }
+            if (requireAuthorizationService)
+            {
+                bodyWriter.Append('\t', 1).Append("_authorizationService = authorizationService;").AppendLine();
             }
 
             bodyWriter.Append("}").AppendLine();
@@ -200,40 +217,17 @@ namespace Cybtans.Proto.Generators.CSharp
                         {
                             ["ACTION"] = rpcName
                         }).AppendLine(2);
-
-                        //methodWriter.Append($"if(_interceptor != null )\r\n\tawait _interceptor.Handle(request, nameof({rpcName})).ConfigureAwait(false);").AppendLine(2);
+                       
                     }
                 }
 
-                if (PrimitiveType.Void.Equals(request))
-                {
-                    methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
-                }
-                else
-                {
-                    if (!request.HasStreams())
-                    {
-                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}} {{Message}}\", nameof({rpcName}), request);").AppendLine(2);
-                    }
-                    else
-                    {                        
-                        methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
-                    }
-
-                    if (_option.UseActionInterceptor)
-                    {
-                        methodWriter.AppendTemplate(inteceptorTemplate, new Dictionary<string, object>
-                        {
-                            ["ACTION"] = rpcName
-                        }).AppendLine(2);
-
-                        //methodWriter.Append($"if(_interceptor != null )\r\n\tawait _interceptor.Handle(request, nameof({rpcName})).ConfigureAwait(false);").AppendLine(2);
-                    }
-                }                
+                AddRequestAuthorization(rpc.Option.AuthOptions, methodWriter);
 
                 if (response.HasStreams())
                 {
                     methodWriter.Append($"var result = await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);").AppendLine();
+
+                    AddResultAuthorization(rpc.Option.AuthOptions, methodWriter);
 
                     var result = "result";
                     var contentType = $"\"{options.StreamOptions?.ContentType ?? "application/octet-stream"}\"";
@@ -264,12 +258,26 @@ namespace Cybtans.Proto.Generators.CSharp
                 }                
                 else
                 {
-                    if (!PrimitiveType.Void.Equals(response))
+                    if (PrimitiveType.Void.Equals(response))
                     {
-                        methodWriter.Append($"return ");
+                        methodWriter.Append($"await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");                           
                     }
+                    else
+                    {   
+                        if(rpc.Option.AuthOptions?.ResultPolicy != null)
+                        {
+                            methodWriter.Append($"var result = await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);")
+                                .AppendLine();
 
-                    methodWriter.Append($"await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");
+                            AddResultAuthorization(rpc.Option.AuthOptions, methodWriter);
+                            methodWriter.Append("return result;");
+                        }
+                        else
+                        {
+                            methodWriter.Append($"return await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);")
+                            .AppendLine();
+                        }                                               
+                    }
                 }
             }
 
@@ -298,7 +306,6 @@ namespace Cybtans.Proto.Generators.CSharp
                 }                
             }
         }
-
 
         private static void AddRequestMethod(CodeWriter bodyWriter, RpcOptions options, string template)
         {
@@ -357,6 +364,33 @@ namespace Cybtans.Proto.Generators.CSharp
                 default:
                     throw new NotImplementedException("Http verb is not valid or not supported");
             }
+        }
+
+        private void AddRequestAuthorization(AuthOptions authOptions, CodeWriter writer)
+        {
+            if (authOptions?.RequestPolicy == null) return;
+
+            writer.Append($@"var authRequestResult = await _authorizationService.AuthorizeAsync(User, request, ""{authOptions.RequestPolicy}"").ConfigureAwait(false);
+if (!authRequestResult.Succeeded)
+{{
+    throw new UnauthorizedAccessException($""Request Authorization Failed: {{ string.Join("", "", authRequestResult.Failure.FailedRequirements) }}"");
+}}");
+            writer.AppendLine(2);
+        }
+
+        private void AddResultAuthorization(AuthOptions authOptions, CodeWriter writer)
+        {
+            if (authOptions?.ResultPolicy == null) return;
+
+            writer.Append($@"if (result != null)
+{{
+    var authResult = await _authorizationService.AuthorizeAsync(User, result, ""{authOptions.ResultPolicy}"").ConfigureAwait(false);
+    if (!authResult.Succeeded)
+    {{
+        throw new UnauthorizedAccessException($""Result Authorization Failed: {{ string.Join("", "", authResult.Failure.FailedRequirements) }}"");
+    }}
+}}");
+            writer.AppendLine(2);
         }
 
 

@@ -39,6 +39,8 @@ namespace Cybtans.Proto.Generator
 
             public bool GenerateGraphQl { get; set; }
 
+            public string AutoMapperOutput { get; set; }
+
             public bool IsValid()
             {
                 return !string.IsNullOrEmpty(AssemblyFilename)
@@ -47,10 +49,23 @@ namespace Cybtans.Proto.Generator
 
             public string GetMappingOutputPath()
             {
-                var path =  Path.Combine(ServiceDirectory, $"{ServiceName}.Services", "Generated", "Mappings");
+                string path;
+                if (AutoMapperOutput != null)
+                {
+                    path = AutoMapperOutput;
+                }
+                else if(ServiceName != null && ServiceDirectory != null)
+                {
+                    path = Path.Combine(ServiceDirectory, $"{ServiceName}.Services", "Generated", "Mappings");
+                }
+                else
+                {
+                    return null;
+                }
+
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
-                return path;
+                return Path.Combine(path, "GeneratedAutoMapperProfile.cs");
             }
 
             public string GetServiceImplOutputPath()
@@ -144,7 +159,7 @@ namespace Cybtans.Proto.Generator
             Console.WriteLine($"Proto generated at {options.ProtoOutputFilename}");
             Console.ResetColor();
 
-            if (types.Any() && options.GenerateCode && options.ServiceName != null && options.ServiceDirectory != null)
+            if (types.Any())
             {
                 //ProtoGenerator protoGenerator = new ProtoGenerator();
                 //protoGenerator.Generate(new[] {
@@ -153,8 +168,15 @@ namespace Cybtans.Proto.Generator
                 //    "-o", options.ServiceDirectory,
                 //    "-f",  options.ProtoOutputFilename });
 
-                GenerateMappings(types, options);
-                GenerateServicesImplementation(types, options);                
+                if (options.AutoMapperOutput != null || (options.ServiceName != null && options.ServiceDirectory != null))
+                {
+                    GenerateMappings(types, options);
+                }
+
+                if (options.GenerateCode && options.ServiceName != null && options.ServiceDirectory != null)
+                {
+                    GenerateServicesImplementation(types, options);
+                }
             }
         }
 
@@ -169,12 +191,16 @@ namespace Cybtans.Proto.Generator
                 AssemblyFilename = Path.Combine(config.Path, step.AssemblyFile),
                 Imports = step.Imports,
                 ServiceName = config.Service,
-                ServiceDirectory = Path.Combine(config.Path, step.Output),
+                ServiceDirectory = step.Output != null ?  Path.Combine(config.Path, step.Output) : null,
                 Grpc = step.Grpc,
                 NameTemplate = step.NameTemplate,
-                GenerateGraphQl = step.GenerateGraphQLQuery
-
+                GenerateGraphQl = step.GenerateGraphQLQuery               
             };
+
+            if (step.AutoMapperOutput != null)
+            {
+                options.AutoMapperOutput = Path.Combine(config.Path, step.AutoMapperOutput);
+            }
 
             if (options.Grpc.MappingOutput != null)
             {
@@ -324,7 +350,7 @@ namespace Cybtans.Proto.Generator
             if (type.GetCustomAttribute<DescriptionAttribute>() != null)
             {
                 var description = type.GetCustomAttribute<DescriptionAttribute>();
-                codeWriter.Append('\t', 1).Append($"option description = \"{description.Description}\";").AppendLine();
+                codeWriter.Append('\t', 1).Append($"option (description) = \"{description.Description}\";").AppendLine();
                 hasMessageOptions = true;
             }
 
@@ -349,7 +375,7 @@ namespace Cybtans.Proto.Generator
                 if(member.GetCustomAttribute<DescriptionAttribute>() != null)
                 {
                     var attr = member.GetCustomAttribute<DescriptionAttribute>();
-                    codeWriter.Append($" [description = \"{attr.Description}\"]");
+                    codeWriter.Append($" [(description) = \"{attr.Description}\"]");
                 }
 
                 codeWriter.Append(";");
@@ -376,7 +402,7 @@ namespace Cybtans.Proto.Generator
             if (type.GetCustomAttribute<DescriptionAttribute>() != null)
             {
                 var description = type.GetCustomAttribute<DescriptionAttribute>();
-                codeWriter.Append('\t', 1).Append($"option description = \"{description.Description}\";").AppendLine();
+                codeWriter.Append('\t', 1).Append($"option (description) = \"{description.Description}\";").AppendLine();
                 hasMessageOptions = true;
             }
 
@@ -483,22 +509,22 @@ namespace Cybtans.Proto.Generator
                 p.DeclaringType.FullName.StartsWith("Cybtans.Entities.DomainAuditableEntity") ||
                 p.DeclaringType.FullName.StartsWith("Cybtans.Entities.AuditableEntity"))
             {
-                options.Add("optional = true");
+                options.Add("(optional) = true");
             }
             else if (p.GetCustomAttribute<RequiredAttribute>() != null)
             {
-                options.Add("required = true");
+                options.Add("(required) = true");
             }
             
             if (p.GetCustomAttribute<DescriptionAttribute>() != null)
             {
                 var attr = p.GetCustomAttribute<DescriptionAttribute>();
-                options.Add($"description = \"{attr.Description}\"");
+                options.Add($"(description) = \"{attr.Description}\"");
             }
 
             if (p.GetCustomAttribute<ObsoleteAttribute>() != null)
             {
-                options.Add("deprecated = true");
+                options.Add("(deprecated) = true");
             }         
 
             if (options.Any())
@@ -512,8 +538,12 @@ namespace Cybtans.Proto.Generator
         private void GenerateServices(CodeWriter codeWriter, HashSet<Type> types, GenerationOptions options)
         {            
             codeWriter.AppendLine();
-            
-            if (types.Any())
+
+            if (types.Any(type =>
+            {
+                var attr = type.GetCustomAttribute<GenerateMessageAttribute>(true);
+                return attr != null && attr.Service != ServiceType.None;
+            }))
             {
                 codeWriter.Append(GetAllTemplate);
             }
@@ -1005,7 +1035,7 @@ message GetAllRequest {
                 writer.Append($"CreateMap<{GetTypeName(type, options)},{type.Name}>();").AppendLine();
             }
 
-            File.WriteAllText($"{options.GetMappingOutputPath()}/GeneratedAutoMapperProfile.cs", 
+            File.WriteAllText(options.GetMappingOutputPath(), 
             TemplateProcessor.Process(MappingTemplate, new
             {
                 ENTITIES_NAMESPACE = ns,

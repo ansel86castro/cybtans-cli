@@ -83,7 +83,8 @@ namespace Cybtans.Proto.Generator
                 {
                     OutputPath = Path.Combine(config.Path, step.Controllers?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/Controllers"),
                     Namespace = step.Controllers?.Namespace,
-                    UseActionInterceptor = step.Controllers?.UseActionInterceptor ?? false
+                    UseActionInterceptor = step.Controllers?.UseActionInterceptor ?? false,
+                    InterceptorType = step.Controllers?.InterceptorType
                 };
 
                 if (step.CSharpClients?.Generate ?? false)
@@ -103,8 +104,10 @@ namespace Cybtans.Proto.Generator
                 {
                     OutputPath = Path.Combine(config.Path, step.ApiGateway?.Output),
                     Namespace = step.ApiGateway?.Namespace ?? $"{config.Service}.Controllers",
-                    UseActionInterceptor = step.ApiGateway?.UseActionInterceptor ?? false
+                    UseActionInterceptor = step.ApiGateway?.UseActionInterceptor ?? false,
+                    InterceptorType = step.ApiGateway?.InterceptorType
                 };
+
                 if(step.ApiGateway?.GraphQL != null && step.ApiGateway.Generate)
                 {
                     var gateway = step.ApiGateway;

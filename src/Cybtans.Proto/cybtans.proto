@@ -24,6 +24,8 @@ extend google.protobuf.MethodOptions {
   GraphQlOptions graphql = 640007;
 
   string rpc_attributes = 640008;
+
+  AuthOptions auth = 640009;
 }
 
 
@@ -89,4 +91,9 @@ message ByteStream {
 
 message GraphQlOptions {
 	string query = 647001;
+}
+
+message AuthOptions {
+	string request = 648001;
+	string result = 648002;
 }

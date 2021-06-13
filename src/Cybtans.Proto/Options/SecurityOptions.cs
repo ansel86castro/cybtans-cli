@@ -23,7 +23,7 @@ namespace Cybtans.Proto.Options
         [Field("anonymous")]
         public bool AllowAnonymous { get; set; }
 
-        public bool RequiredAuthorization => Authorized || Roles != null || Policy != null;
+        public virtual bool RequiredAuthorization => Authorized || Roles != null || Policy != null;
 
         public class Wrapper : ProtobufOption
         {

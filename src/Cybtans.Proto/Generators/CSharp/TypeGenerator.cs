@@ -182,7 +182,15 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 if (field.Option.Default != null)
                 {
-                    bodyWriter.Append(" = ").Append(field.Option.Default.ToString()).Append(";");
+                    bodyWriter.Append(" = ");
+                    if (field.Option.Default is string)
+                    {
+                        bodyWriter.Append("\"").Append(field.Option.Default.ToString()).Append("\"").Append(";");
+                    }
+                    else 
+                    { 
+                        bodyWriter.Append(field.Option.Default.ToString()).Append(";");
+                    }
                 }
 
                 bodyWriter.AppendLine(2);
