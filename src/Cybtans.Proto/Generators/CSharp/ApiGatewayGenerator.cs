@@ -32,5 +32,10 @@ namespace Cybtans.Proto.Generators.CSharp
         {
             return _clientGenerator.GetClientName(service);
         }
+
+        protected override void WriteHandleResult(RpcDeclaration rpc, string rpcName, CodeWriter methodWriter)
+        {
+            
+        }
     }
 }

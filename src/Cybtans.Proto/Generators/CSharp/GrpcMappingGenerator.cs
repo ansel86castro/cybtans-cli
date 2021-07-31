@@ -44,6 +44,9 @@ namespace Cybtans.Proto.Generators.CSharp
                     {
                         foreach (var rpc in service.Rpcs)
                         {
+                            if (rpc.IsExtension)
+                                continue;
+
                             if (rpc.RequestType is MessageDeclaration requestMsg && (service.Option.GrpcProxy || rpc.Option.GrpcMappingRequest))
                             {
                                 AddTypes(requestMsg, 0, typesMap);
@@ -127,7 +130,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             foreach (var field in type.Fields)
             {
-                if (field.IsExternal || field.Option.GrpcOption.NotMapped)
+                if (field.IsExtension || field.Option.GrpcOption.NotMapped)
                     continue;
 
                 var fieldName = field.Name.Pascal();
@@ -176,7 +179,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             foreach (var field in type.Fields)
             {
-                if (field.IsExternal || field.Option.GrpcOption.NotMapped)
+                if (field.IsExtension || field.Option.GrpcOption.NotMapped)
                     continue;
 
                 var fieldName = field.Name.Pascal();

@@ -211,78 +211,83 @@ namespace Cybtans.Proto.Generators.CSharp
                         methodWriter.Append($"_logger.LogInformation(\"Executing {{Action}}\", nameof({rpcName}));").AppendLine(2);
                     }
 
+                    AddRequestAuthorization(rpc.Option.AuthOptions, methodWriter);
+
                     if (_option.UseActionInterceptor)
                     {
                         methodWriter.AppendTemplate(inteceptorTemplate, new Dictionary<string, object>
                         {
                             ["ACTION"] = rpcName
-                        }).AppendLine(2);
-                       
-                    }
+                        }).AppendLine(2);                       
+                    }                    
+                }               
+
+                if (PrimitiveType.Void.Equals(response))
+                {
+                    methodWriter.Append($"await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");
                 }
-
-                AddRequestAuthorization(rpc.Option.AuthOptions, methodWriter);
-
-                if (response.HasStreams())
+                else
                 {
                     methodWriter.Append($"var result = await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);").AppendLine();
 
                     AddResultAuthorization(rpc.Option.AuthOptions, methodWriter);
 
-                    var result = "result";
-                    var contentType = $"\"{options.StreamOptions?.ContentType ?? "application/octet-stream"}\"";
-
-                    var fileName = options.StreamOptions?.Name;
-                    fileName = fileName != null ? $"\"{fileName}\"" : "Guid.NewGuid().ToString()";
-
-                    if (response is MessageDeclaration responseMsg)
+                    if (response.HasStreams())
                     {
-                        var name = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.String && x.Name.ToLowerInvariant().EndsWith("name"));
-                        var type = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.String && x.Name.ToLowerInvariant() == "contenttype" || x.Name.ToLowerInvariant() == "content_type");
-                        if (name != null)
-                            fileName = $"result.{name.GetFieldName()}";
-                        if (type != null)
-                            contentType = $"result.{type.GetFieldName()}";
-
-                        methodWriter.AppendTemplate(streamReturnTemplate, new Dictionary<string, object>())
-                            .AppendLine();
-
-                        var stream = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.Stream);
-                        if (stream != null)
-                        {
-                            result = $"result.{stream.GetFieldName()}";
-                        }
-                    }
-
-                    methodWriter.Append($"return new FileStreamResult({result}, {contentType}) {{ FileDownloadName = {fileName} }};");
-                }                
-                else
-                {
-                    if (PrimitiveType.Void.Equals(response))
-                    {
-                        methodWriter.Append($"await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);");                           
+                        WriteDownloadCode(options, response, methodWriter);
                     }
                     else
-                    {   
-                        if(rpc.Option.AuthOptions?.ResultPolicy != null)
-                        {
-                            methodWriter.Append($"var result = await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);")
-                                .AppendLine();
+                    {
+                        WriteHandleResult(rpc, rpcName, methodWriter);
 
-                            AddResultAuthorization(rpc.Option.AuthOptions, methodWriter);
-                            methodWriter.Append("return result;");
-                        }
-                        else
-                        {
-                            methodWriter.Append($"return await _service.{rpcName}({(!PrimitiveType.Void.Equals(request) ? "request" : "")}).ConfigureAwait(false);")
-                            .AppendLine();
-                        }                                               
+                        methodWriter.Append("return result;");
                     }
-                }
+                }               
             }
 
             clsWriter.Append("}").AppendLine();
             writer.Save($"{srvInfo.Name}Controller");
+        }
+
+        protected virtual void WriteHandleResult(RpcDeclaration rpc, string rpcName, CodeWriter methodWriter)
+        {
+            if (rpc.Option.HandleResult)
+            {
+                methodWriter.AppendTemplate(inteceptorResultTemplate, new Dictionary<string, object>
+                {
+                    ["ACTION"] = rpcName
+                }).AppendLine(2);
+            }
+        }
+
+        private void WriteDownloadCode(RpcOptions options, ITypeDeclaration response, CodeWriter methodWriter)
+        {
+            var result = "result";
+            var contentType = $"\"{options.StreamOptions?.ContentType ?? "application/octet-stream"}\"";
+
+            var fileName = options.StreamOptions?.Name;
+            fileName = fileName != null ? $"\"{fileName}\"" : "Guid.NewGuid().ToString()";
+
+            if (response is MessageDeclaration responseMsg)
+            {
+                var name = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.String && x.Name.ToLowerInvariant().EndsWith("name"));
+                var type = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.String && x.Name.ToLowerInvariant() == "contenttype" || x.Name.ToLowerInvariant() == "content_type");
+                if (name != null)
+                    fileName = $"result.{name.GetFieldName()}";
+                if (type != null)
+                    contentType = $"result.{type.GetFieldName()}";
+
+                methodWriter.AppendTemplate(streamReturnTemplate, new Dictionary<string, object>())
+                    .AppendLine();
+
+                var stream = responseMsg.Fields.FirstOrDefault(x => x.FieldType == PrimitiveType.Stream);
+                if (stream != null)
+                {
+                    result = $"result.{stream.GetFieldName()}";
+                }
+            }
+
+            methodWriter.Append($"return new FileStreamResult({result}, {contentType}) {{ FileDownloadName = {fileName} }};");
         }
 
         private static void AddDescription(ServiceGenInfo srvInfo, CodeWriter clsWriter)
@@ -404,6 +409,12 @@ if(Request.Headers.ContainsKey(""Accept"") && System.Net.Http.Headers.MediaTypeH
 @"if(_interceptor != null )
 {
     await _interceptor.Handle(request).ConfigureAwait(false);
+}";
+
+        string inteceptorResultTemplate =
+@"if(_interceptor != null )
+{
+    await _interceptor.HandleResult(result).ConfigureAwait(false);
 }";
     }
 }

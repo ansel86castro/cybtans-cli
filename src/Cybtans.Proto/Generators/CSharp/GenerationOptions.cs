@@ -112,6 +112,15 @@ namespace Cybtans.Proto.Generators.CSharp
         public string QueryName { get; set; }
 
         public bool Explicit { get; set; }
+
+        public bool HandleRequest { get; set; }
+
+        public string InterceptorType { get; set; }
+
+        public string GetInterceptorType()
+        {
+            return InterceptorType ?? "global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor";
+        }
     }
     
 }

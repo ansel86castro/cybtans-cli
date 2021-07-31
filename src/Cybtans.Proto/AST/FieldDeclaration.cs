@@ -45,7 +45,7 @@ namespace Cybtans.Proto.AST
 
         public int Number { get; set; }
 
-        public bool IsExternal { get; set; }
+        public bool IsExtension { get; set; }
 
         public MessageDeclaration Message { get; set; }
 

@@ -75,7 +75,9 @@ namespace Cybtans.Proto.Generator
                         OutputPath = Path.Combine(config.Path, step.Services.GraphQL?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/GraphQL"),
                         Namespace = step.Services.GraphQL.Namespace ?? $"{config.Service}.GraphQL",
                         QueryName = step.Services.GraphQL.QueryName ?? $"{ast.Filename.Pascal()}QueryDefinitions",
-                        Explicit = step.Services.GraphQL.Explicit
+                        Explicit = step.Services.GraphQL.Explicit,
+                        HandleRequest = step.Services.GraphQL.HandleRequest || (step.Controllers?.UseActionInterceptor ?? false),
+                        InterceptorType = step.Services.GraphQL.InterceptorType ?? (step.Controllers?.InterceptorType)
                     };
                 }
 

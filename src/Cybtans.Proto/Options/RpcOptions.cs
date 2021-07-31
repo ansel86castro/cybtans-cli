@@ -57,6 +57,9 @@ namespace Cybtans.Proto.Options
         [Field("auth")]
         public AuthOptions? AuthOptions { get; set; }
 
+        [Field("handle_result")]
+        public bool HandleResult { get; set; }
+
         public override bool RequiredAuthorization => base.RequiredAuthorization || AuthOptions != null;
     }
 

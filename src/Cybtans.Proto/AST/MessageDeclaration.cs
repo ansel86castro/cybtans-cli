@@ -129,7 +129,7 @@ namespace Cybtans.Proto.AST
                 return f;
             }).ToList();
 
-            Fields.ForEach(x => x.IsExternal = true);
+            Fields.ForEach(x => x.IsExtension = true);
             Fields.AddRange(fields);
 
             Enums.AddRange(msg.Enums);
