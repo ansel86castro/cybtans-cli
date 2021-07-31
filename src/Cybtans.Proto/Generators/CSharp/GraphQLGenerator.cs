@@ -475,7 +475,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
 
-            bodyWriter.AppendLine().Append("}");
+            bodyWriter.AppendLine().Append("}").AppendLine();
             clsWriter.Append("}").AppendLine(2);
 
             foreach (var slot in slots)
@@ -523,7 +523,7 @@ public class @{NAME} : Schema
 
             var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
 
-            bodyWriter.AppendLine().Append("}");
+            bodyWriter.AppendLine().Append("}").AppendLine();
             clsWriter.Append("}").AppendLine(2);
 
             foreach (var slot in slots)

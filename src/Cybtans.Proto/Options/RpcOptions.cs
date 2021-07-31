@@ -38,6 +38,9 @@ namespace Cybtans.Proto.Options
         [Field("grpc_mapping")]
         public string? GrpcMapping { get; set; }
 
+        [Field("grpc_partial")]
+        public bool GrpcPartial { get; set; }
+
         public bool GrpcMappingRequest => GrpcMapping == "request" || GrpcMapping == "all";
 
         public bool GrpcMappingResponse => GrpcMapping == "response" || GrpcMapping == "all";

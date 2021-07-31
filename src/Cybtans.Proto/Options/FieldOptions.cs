@@ -28,6 +28,17 @@ namespace Cybtans.Proto.Options
 
         [Field("ts")]
         public TypecriptOptions Typecript { get; set; } = new TypecriptOptions();
+
+        [Field("grpc")]
+        public FieldGrpcOption GrpcOption { get; set; } = new FieldGrpcOption();
+
+        public class FieldGrpcOption: ProtobufOption
+        {
+            public FieldGrpcOption() : base(OptionsType.Field) { }
+
+            [Field("not_mapped")]
+            public bool NotMapped { get; set; }
+        }
     }
 
     public class TypecriptOptions : ProtobufOption
@@ -37,5 +48,9 @@ namespace Cybtans.Proto.Options
 
         [Field("partial")]
         public bool Partial { get; set; }
+
+        [Field("optional")]
+        public bool Optional { get; set; }
     }
+    
 }
