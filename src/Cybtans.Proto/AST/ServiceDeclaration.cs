@@ -34,7 +34,9 @@ namespace Cybtans.Proto.AST
 
         public void Merge(ServiceDeclaration srv)
         {
-            var lookup = Rpcs.ToDictionary(x => x.Name);            
+            var lookup = Rpcs.ToDictionary(x => x.Name);
+            Rpcs.ForEach(x => x.IsExtension = true);
+
             foreach (var rpc in srv.Rpcs)
             {
                 if(!lookup.TryGetValue(rpc.Name, out var target))               
@@ -76,8 +78,9 @@ namespace Cybtans.Proto.AST
 
         public ITypeDeclaration RequestType { get; set; }
 
-        public ITypeDeclaration ResponseType { get; set; }      
-                
+        public ITypeDeclaration ResponseType { get; set; }
+        
+        public bool IsExtension { get; set; }
 
         public override void CheckSemantic(Scope scope, IErrorReporter logger)
         {

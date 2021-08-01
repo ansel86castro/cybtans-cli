@@ -24,12 +24,28 @@ namespace Cybtans.Proto.AST
                 Options = options;
             }
         }
-       
+
+        public FieldDeclaration(int line, int column, TypeIdentifier typeRef, string name, int number, List<OptionsExpression> options)
+            :base(line, column)
+        {
+            Type = typeRef;
+            Name = name;
+            Number = number;
+
+            if (options != null)
+            {
+                Options = options;
+            }
+        }
+
+
         public TypeIdentifier Type { get; set; }
 
         public ITypeDeclaration FieldType => Type?.TypeDeclaration;
 
         public int Number { get; set; }
+
+        public bool IsExtension { get; set; }
 
         public MessageDeclaration Message { get; set; }
 
@@ -72,6 +88,11 @@ namespace Cybtans.Proto.AST
                     || FieldType == PrimitiveType.Duration
                 );
             }
+        }
+    
+        public FieldDeclaration Clone()
+        {
+            return (FieldDeclaration)MemberwiseClone();            
         }
     }
 

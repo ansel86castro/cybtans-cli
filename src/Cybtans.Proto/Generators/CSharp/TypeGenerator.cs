@@ -278,7 +278,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 getPropertyCode.Append($"\"{field.Name}\" => {field.Name},\r\n");
             }
 
-            body.Append("private readonly int[] _props = new []").AppendLine();
+            body.Append("private readonly int[] _props = new int[]").AppendLine();
             body.Append("{").AppendLine();
 
             body.Append('\t',1).Append(string.Join(",", fields.Select(x => x.Name)));

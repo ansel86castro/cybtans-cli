@@ -151,7 +151,7 @@ namespace Cybtans.Proto.Generator
            
             Console.WriteLine($"Generating proto from {options.AssemblyFilename}");
          
-            var loader = new Cybtans.Proto.Utils.AssemblyLoader(options.AssemblyFilename);
+            using var loader = new Cybtans.Proto.Utils.AssemblyLoader(options.AssemblyFilename);
             var exportedTypes = loader.LoadTypes();
             var types = GenerateMessages(options, exportedTypes);
 
@@ -715,9 +715,7 @@ namespace Cybtans.Proto.Generator
             writer.Save("ProtobufMappingExtensions");
     
         }
-
-       
-
+      
         private void GenerateModelToProtobufMapping(Type type, CodeWriter writer, GenerationOptions generationOptions)
         {
             GrpcCompatibility options = generationOptions.Grpc;
@@ -804,6 +802,7 @@ namespace Cybtans.Proto.Generator
                 var fieldType = field.PropertyType;
 
                 if (field.GetCustomAttribute<MessageExcludedAttribute>() != null ||
+                   !field.CanWrite ||
                    field.DeclaringType.FullName.StartsWith("Cybtans.Entities.DomainTenantEntity") ||
                    field.DeclaringType.FullName.StartsWith("Cybtans.Entities.TenantEntity"))
                         continue;

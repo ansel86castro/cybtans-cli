@@ -119,14 +119,23 @@ namespace Cybtans.Proto.AST
 
         public void Merge(MessageDeclaration msg)
         {
-            var max = Fields.Max(x => x.Number);
-            msg.Fields.ForEach(x => x.Number += max);
+            var max = Fields.Max(x => x.Number);            
 
-            Fields.AddRange(msg.Fields);             
+            var fields = msg.Fields.Select(x =>
+            {
+                var f= x.Clone();
+                f.Number += max;
+                f.Message = this;
+                return f;
+            }).ToList();
+
+            Fields.ForEach(x => x.IsExtension = true);
+            Fields.AddRange(fields);
 
             Enums.AddRange(msg.Enums);
             InnerMessages.AddRange(msg.InnerMessages);
         }
+            
     }
 
    

@@ -145,6 +145,18 @@ namespace Cybtans.Proto.Generator
         public bool Explicit { get; set; }
 
         public string QueryName { get; set; }
+        public bool HandleRequest { get; set; }
+
+        public string InterceptorType { get; set; }
+
+        public bool UseInterceptor
+        {
+            get { return InterceptorType != null; }
+            set
+            {
+                InterceptorType = value ? "global::Cybtans.AspNetCore.Interceptors.IMessageInterceptor" : null;
+            }
+        }
     }
 
     public class StepClientOptions : StepOption

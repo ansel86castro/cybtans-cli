@@ -162,16 +162,8 @@ namespace Cybtans.Proto.Generators.CSharp
                 writer.Usings.Append("using Cybtans.Services;").AppendLine();
                 clsWriter.Append($"[RegisterDependency(typeof({ interfaceName}))]").AppendLine();
             }
-
-
-            clsWriter.Append("public");
-
-            if (_option.PartialClass)
-            {
-                clsWriter.Append(" partial");
-            }            
-          
-            clsWriter.Append($" class {proxyName} : {interfaceName}").AppendLine();
+            
+            clsWriter.Append($"public partial class {proxyName} : {interfaceName}").AppendLine();
 
             clsWriter.Append("{").AppendLine();
             clsWriter.Append('\t', 1);
@@ -180,16 +172,54 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var grpcClientType = $"{Proto.Option.CSharpNamespace}.{info.Name}.{info.Name}Client";
 
-            bodyWriter.Append($"private readonly global::{grpcClientType}  _client;").AppendLine()                   
-                      .Append($"private readonly ILogger<{proxyName}> _logger;").AppendLine()
-                      .AppendLine();
+            bodyWriter.Append($"private readonly global::{grpcClientType}  _client;").AppendLine()
+                      .Append($"private readonly ILogger<{proxyName}> _logger;").AppendLine();
+
+            List<(string name, string type)> parameters = null;
+            if (info.Service.Option.ConstructorOptions?.HasAdditionalParameters ?? false)
+            {
+                parameters = info.Service.Option.ConstructorOptions.GetParameters();
+                foreach (var item in parameters)
+                {
+                    bodyWriter.Append($"private readonly global::{item.type}  _{item.name};").AppendLine();
+                }               
+            }
+
+            bodyWriter.AppendLine();
 
             #region Constructor
 
-            bodyWriter.Append($"public {proxyName}(global::{grpcClientType} client, ILogger<{proxyName}> logger)").AppendLine();
+            if (info.Service.Option.ConstructorOptions?.Visibility != null)
+            {
+                bodyWriter.Append(info.Service.Option.ConstructorOptions.Visibility);
+            }
+            else
+            {
+                bodyWriter.Append("public");
+            }
+
+            bodyWriter.Append($" {proxyName}(global::{grpcClientType} client, ILogger<{proxyName}> logger");
+            if (parameters != null)
+            {
+                foreach (var item in parameters)
+                {
+                    bodyWriter.Append($", global::{item.type} {item.name}");
+                }
+            }
+            bodyWriter.Append(")").AppendLine();
+
             bodyWriter.Append("{").AppendLine();
             bodyWriter.Append('\t', 1).Append("_client = client;").AppendLine();         
             bodyWriter.Append('\t', 1).Append("_logger = logger;").AppendLine();
+
+            if (parameters!=null)
+            {                
+                foreach (var item in parameters)
+                {
+                    bodyWriter.Append('\t', 1).Append($"_{item.name} = {item.name};").AppendLine();
+                }                
+            }
+
             bodyWriter.Append("}").AppendLine();
 
             #endregion
@@ -201,8 +231,26 @@ namespace Cybtans.Proto.Generators.CSharp
                 var rpcName = GetRpcName(rpc);                                  
 
                 bodyWriter.AppendLine();
-              
-                bodyWriter.Append($"public async {returnInfo.GetFullReturnTypeName()} { GetRpcName(rpc)}({requestInfo.GetFullRequestTypeName("request")})").AppendLine();
+
+                bodyWriter.Append($"public ");
+
+                if (rpc.Option.GrpcPartial)
+                {
+                    bodyWriter.Append("partial ");
+                }
+                else
+                {
+                    bodyWriter.Append("async ");
+                }
+
+                bodyWriter.Append($"{returnInfo.GetFullReturnTypeName()} { GetRpcName(rpc)}({requestInfo.GetFullRequestTypeName("request")})");
+                if (rpc.Option.GrpcPartial)
+                {
+                    bodyWriter.Append(";").AppendLine();
+                    continue;
+                }
+
+                bodyWriter.AppendLine();
                 bodyWriter.Append("{").AppendLine().Append('\t', 1);
 
                 var methodWriter = bodyWriter.Block($"METHODBODY_{rpc.Name}");

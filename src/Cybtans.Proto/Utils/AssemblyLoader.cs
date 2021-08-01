@@ -13,12 +13,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Cybtans.Proto.Utils
 {
-    public class AssemblyLoader
+    public class AssemblyLoader : IDisposable
     {
         Dictionary<string, PackageInfo> _packageInfos = new Dictionary<string, PackageInfo>();
         private string _dir;
         private string _nugetDir;
         private string _filename;
+        private bool disposed;
 
         public AssemblyLoader(string filename)
         {
@@ -89,14 +90,24 @@ namespace Cybtans.Proto.Utils
             }
         }
 
+        public void Dispose()
+        {
+            if (disposed)
+                return;
+
+            AppDomain.CurrentDomain.AssemblyResolve -= LoadAssemblyDelegate;
+            disposed = true;
+        }
+
         public IEnumerable<Type> LoadTypes()
         {
+            if (disposed)
+                throw new InvalidOperationException("Object disposed");
+
             AppDomain.CurrentDomain.AssemblyResolve += LoadAssemblyDelegate;
 
             var assembly = Assembly.Load(File.ReadAllBytes(_filename));
-            var types =  assembly.ExportedTypes.ToList();
-
-            AppDomain.CurrentDomain.AssemblyResolve -= LoadAssemblyDelegate;
+            var types =  assembly.ExportedTypes.ToList();           
 
             return types;
         }

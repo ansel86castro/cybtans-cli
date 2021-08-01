@@ -1,6 +1,8 @@
 ﻿#nullable enable
 
 using Cybtans.Proto.AST;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Cybtans.Proto.Options
 {
@@ -37,5 +39,37 @@ namespace Cybtans.Proto.Options
         [Field("srv_attributes")]
         public string? SrvAttributes { get => Attributes; set => Attributes = value; }
 
+        [Field("constructor")]
+        public ServiceConstructorOptions ConstructorOptions { get; set; }
+
+    }
+
+    public class ServiceConstructorOptions : ProtobufOption
+    {
+        public ServiceConstructorOptions() : base(OptionsType.Service)
+        {
+        }
+
+        [Field("access")]
+        public string? Visibility { get; set; } = "public";
+
+        [Field("params")]
+        public string? Parameters { get; set; }
+
+        public bool HasAdditionalParameters => Parameters != null;
+
+        public List<(string name, string type)> GetParameters()
+        {
+            if (Parameters == null) return new List<(string name, string type)>();
+
+            var parts = Parameters.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+
+            return parts
+                .Select(x => x.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
+                .Where(x=>x.Length == 2)
+                .Select(x=> (x[1], x[0]))
+                .ToList();
+
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public override void GenerateCode()
         {
-            Dictionary<MessageDeclaration, RpcTypeInfo> typesMap = new Dictionary<MessageDeclaration, RpcTypeInfo>();
+            Dictionary<string, RpcTypeInfo> typesMap = new Dictionary<string, RpcTypeInfo>();
 
             foreach (var proto in _protos)
             {
@@ -44,6 +44,9 @@ namespace Cybtans.Proto.Generators.CSharp
                     {
                         foreach (var rpc in service.Rpcs)
                         {
+                            if (rpc.IsExtension)
+                                continue;
+
                             if (rpc.RequestType is MessageDeclaration requestMsg && (service.Option.GrpcProxy || rpc.Option.GrpcMappingRequest))
                             {
                                 AddTypes(requestMsg, 0, typesMap);
@@ -95,12 +98,12 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 if (item.IsRequest)
                 {
-                    GenerateModelToProtobufMapping(key, bodyWriter);
+                    GenerateModelToProtobufMapping(item.Type, bodyWriter);
                 }
 
                 if (item.IsResponse)
                 {
-                    GenerateProtobufToPocoMapping(key, bodyWriter);
+                    GenerateProtobufToPocoMapping(item.Type, bodyWriter);
                 }
             }
 
@@ -127,6 +130,9 @@ namespace Cybtans.Proto.Generators.CSharp
 
             foreach (var field in type.Fields)
             {
+                if (field.IsExtension || field.Option.GrpcOption.NotMapped)
+                    continue;
+
                 var fieldName = field.Name.Pascal();
                 var fieldType = field.FieldType;
 
@@ -144,11 +150,7 @@ namespace Cybtans.Proto.Generators.CSharp
                         bodyWriter.Append($"result.{fieldName}.AddRange(model.{fieldName}.Select(x => {selector} ));").AppendLine();
                     }
                 }
-                else if (field.Type.IsMap)
-                {
-
-                }
-                else
+                else if (!field.Type.IsMap)                
                 {
                     var path = ConvertToGrpc($"model.{fieldName}", fieldType);
                     bodyWriter.Append($"result.{fieldName} = {path};").AppendLine();
@@ -177,6 +179,9 @@ namespace Cybtans.Proto.Generators.CSharp
 
             foreach (var field in type.Fields)
             {
+                if (field.IsExtension || field.Option.GrpcOption.NotMapped)
+                    continue;
+
                 var fieldName = field.Name.Pascal();
                 var fieldType = field.FieldType;
 
@@ -192,11 +197,7 @@ namespace Cybtans.Proto.Generators.CSharp
                         bodyWriter.Append($"result.{fieldName} = model.{fieldName}.Select(x => {selector}).ToList();").AppendLine();
                     }
                 }
-                else if (field.Type.IsMap)
-                {
-
-                }              
-                else
+                else if (!field.Type.IsMap)                
                 {
                     var path = ConvertToPoco($"model.{fieldName}", fieldType);
                     bodyWriter.Append($"result.{fieldName} = {path};").AppendLine();
@@ -285,11 +286,11 @@ namespace Cybtans.Proto.Generators.CSharp
             }
         }
 
-        private void AddTypes(MessageDeclaration type, int position, Dictionary<MessageDeclaration, RpcTypeInfo> typesMap)
+        private void AddTypes(MessageDeclaration type, int position, Dictionary<string, RpcTypeInfo> typesMap)
         {
             RpcTypeInfo info;
 
-            if (!typesMap.TryGetValue(type, out info))
+            if (!typesMap.TryGetValue(type.Name, out info))
             {
                 info = new RpcTypeInfo
                 {
@@ -298,8 +299,13 @@ namespace Cybtans.Proto.Generators.CSharp
                     IsResponse = position == 1
                 };
 
-                typesMap.Add(type, info);
+                typesMap.Add(type.Name, info);
             }            
+
+            if(info.Type != type)
+            {
+                info.Type = type;
+            }
 
             if (position == 0)
             {

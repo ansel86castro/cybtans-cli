@@ -230,6 +230,17 @@ namespace Cybtans.Proto.Generators.CSharp
                     {
                         resolveWriter.Append($"request.{field.GetFieldName()} = context.GetArgument<{field.GetFieldTypeName()}>(\"{field.Name.Camel()}\", default({field.GetFieldTypeName()}));").AppendLine();
                     }
+
+                    if (_option.HandleRequest)
+                    {
+                        resolveWriter
+                            .AppendLine()
+                            .Append($"var interceptor = context.RequestServices.GetService<{_option.GetInterceptorType()}>();\r\n")
+                            .Append("if( interceptor != null )\r\n{\r\n")
+                            .Append('\t',1).Append("await interceptor.Handle(request).ConfigureAwait(false);\r\n}")
+                            .AppendLine();                                               
+                    }
+
                     resolveWriter.AppendLine();
                 }
 
@@ -239,6 +250,18 @@ namespace Cybtans.Proto.Generators.CSharp
 
                 var arg = !PrimitiveType.Void.Equals(request) ? "request" : "";
                 resolveWriter.Append($"var result = await service.{rpc.Name}({arg}).ConfigureAwait(false);").AppendLine();
+
+                if (rpc.Option.HandleResult)
+                {
+                    resolveWriter.AppendLine();
+
+                    if (!_option.HandleRequest)                    
+                        resolveWriter.Append($"var interceptor = context.RequestServices.GetService<{_option.GetInterceptorType()}>();\r\n");
+                    
+                    resolveWriter.Append("if( interceptor != null )\r\n{\r\n")
+                        .Append('\t', 1).Append("await interceptor.HandleResult(result).ConfigureAwait(false);\r\n}")
+                        .AppendLine(2);
+                }
 
                 AddResultSecurity(service, rpc, resolveWriter);
 
@@ -475,7 +498,7 @@ namespace Cybtans.Proto.Generators.CSharp
 
             var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
 
-            bodyWriter.AppendLine().Append("}");
+            bodyWriter.AppendLine().Append("}").AppendLine();
             clsWriter.Append("}").AppendLine(2);
 
             foreach (var slot in slots)
@@ -523,7 +546,7 @@ public class @{NAME} : Schema
 
             var methodWriter = bodyWriter.Append('\t', 1).Block($"Constructor__QUERY__");
 
-            bodyWriter.AppendLine().Append("}");
+            bodyWriter.AppendLine().Append("}").AppendLine();
             clsWriter.Append("}").AppendLine(2);
 
             foreach (var slot in slots)
