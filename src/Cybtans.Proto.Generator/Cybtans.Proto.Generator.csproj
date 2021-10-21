@@ -31,6 +31,7 @@
     <None Remove="Templates\DbContext.tpl" />
     <None Remove="Templates\ProtoServices.tpl" />
     <None Remove="Templates\ReadOnlyProtoServices.tpl" />
+    <None Remove="Templates\Service.tpl" />
     <None Remove="Templates\Stub.tpl" />
     <None Remove="Templates\WebAPI\appsettings.Development.tpl" />
     <None Remove="Templates\WebAPI\appsettings.tpl" />
@@ -45,6 +46,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Templates\cybtans.tpl" />
     <EmbeddedResource Include="Templates\ReadOnlyProtoServices.tpl" />
+    <EmbeddedResource Include="Templates\Service.tpl" />
     <EmbeddedResource Include="Templates\Stub.tpl" />
     <EmbeddedResource Include="Templates\DbContext.tpl" />
     <EmbeddedResource Include="Templates\ProtoServices.tpl" />
@@ -75,7 +77,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cybtans.Entities.Proto" Version="1.2.1" />
+    <PackageReference Include="Cybtans.Entities.Proto" Version="1.2.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 

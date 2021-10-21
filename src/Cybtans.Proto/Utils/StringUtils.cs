@@ -57,7 +57,7 @@ namespace Cybtans.Proto.Utils
                     {
                         sb.Append(char.ToUpperInvariant(c));
                     }
-                    else if (i <= part.Length - 1 && char.IsLower(part[i - 1]) && char.IsUpper(c))
+                    else if (i <= part.Length - 1 && (char.IsLower(part[i - 1]) || char.IsDigit(part[i - 1])) && char.IsUpper(c))
                     {
                         sb.Append(c);
                     }
@@ -94,7 +94,7 @@ namespace Cybtans.Proto.Utils
                         {
                             sb.Append(char.ToLowerInvariant(c));
                         }
-                        else if (i <= part.Length - 1 && char.IsLower(part[i - 1]) && char.IsUpper(c))
+                        else if (i <= part.Length - 1 && (char.IsLower(part[i - 1]) || char.IsDigit(part[i - 1])) && char.IsUpper(c))
                         {
                             sb.Append(c);
                         }

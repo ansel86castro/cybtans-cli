@@ -29,17 +29,25 @@ namespace Cybtans.Proto.Generator
                 return false;          
 
             var protoFile = Path.Combine(config.Path, step.ProtoFile);
-            if (string.IsNullOrEmpty(step.SearchPath))
-            {
-                step.SearchPath = config.Path; //Path.GetDirectoryName(protoFile);
-            }
 
-            if (string.IsNullOrEmpty(step.SearchPath))
+            if (!string.IsNullOrEmpty(step.SearchPath))
+            {
+                if (!Path.IsPathFullyQualified(step.SearchPath))
+                {
+                    step.SearchPath = Path.Combine(config.Path, step.SearchPath);
+                }
+            }
+            else if(config.Path != null)
+            {
+                step.SearchPath = config.Path;
+            }
+            else
             {
                 step.SearchPath = Environment.CurrentDirectory;
             }
+            
 
-            var fileResolverFactory = new SearchPathFileResolverFactory(new string[] { step.SearchPath });
+            var fileResolverFactory = new SearchPathFileResolverFactory(step.SearchPath.Split(",", StringSplitOptions.RemoveEmptyEntries| StringSplitOptions.TrimEntries));
 
             Console.WriteLine($"Compiling {protoFile}");
 
@@ -48,6 +56,7 @@ namespace Cybtans.Proto.Generator
 
             var options = new GenerationOptions()
             {
+                ClearOutputs = step.ClearOutput,
                 ModelOptions = ast.HaveMessages ?  new ModelGeneratorOptions()
                 {
                     OutputPath = Path.Combine(config.Path, step.Models?.Output ?? $"{step.Output}/{config.Service}.Models"),
@@ -72,7 +81,7 @@ namespace Cybtans.Proto.Generator
                 {
                     options.ServiceOptions.GraphQLOptions = new GraphQLGeneratorOptions
                     {
-                        OutputPath = Path.Combine(config.Path, step.Services.GraphQL?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/GraphQL"),
+                        OutputPath = Path.Combine(config.Path, step.Services.GraphQL?.Output ?? $"{step.Output}/{config.Service}.WebApi/Generated/GraphQL"),
                         Namespace = step.Services.GraphQL.Namespace ?? $"{config.Service}.GraphQL",
                         QueryName = step.Services.GraphQL.QueryName ?? $"{ast.Filename.Pascal()}QueryDefinitions",
                         Explicit = step.Services.GraphQL.Explicit,
@@ -83,7 +92,7 @@ namespace Cybtans.Proto.Generator
 
                 options.ControllerOptions = new WebApiControllerGeneratorOption()
                 {
-                    OutputPath = Path.Combine(config.Path, step.Controllers?.Output ?? $"{step.Output}/{config.Service}.RestApi/Generated/Controllers"),
+                    OutputPath = Path.Combine(config.Path, step.Controllers?.Output ?? $"{step.Output}/{config.Service}.WebApi/Generated/Controllers"),
                     Namespace = step.Controllers?.Namespace,
                     UseActionInterceptor = step.Controllers?.UseActionInterceptor ?? false,
                     InterceptorType = step.Controllers?.InterceptorType
@@ -124,7 +133,6 @@ namespace Cybtans.Proto.Generator
             }         
 
             MicroserviceGenerator microserviceGenerator = new MicroserviceGenerator(options);            
-
             microserviceGenerator.GenerateCode(ast, scope);            
             try
             {
@@ -294,8 +302,8 @@ namespace Cybtans.Proto.Generator
             {
                 options.ModelOptions.OutputPath = $"{output}/{name}.Models";
                 options.ServiceOptions.OutputPath = $"{output}/{name}.Services/Generated";
-                options.ControllerOptions.OutputPath = $"{output}/{name}.RestApi/Controllers/Generated";
-                options.ControllerOptions.Namespace = "RestApi.Controllers";
+                options.ControllerOptions.OutputPath = $"{output}/{name}.WebApi/Controllers/Generated";
+                options.ControllerOptions.Namespace = "WebApi.Controllers";
                 options.ClientOptions.OutputPath = $"{output}/{name}.Clients";
 
                 if(options.ApiGatewayOptions != null)

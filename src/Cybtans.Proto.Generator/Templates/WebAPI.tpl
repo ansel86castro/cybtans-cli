@@ -8,4 +8,10 @@
 
   @{FERERENCES}
 
+  <PropertyGroup>
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+
 </Project>

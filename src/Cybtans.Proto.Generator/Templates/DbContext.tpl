@@ -2,7 +2,7 @@
 using Cybtans.Entities.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace @{SERVICE}.Domain.EntityFramework
+namespace @{SERVICE}.Data.Repositories
 {
     public class @{SERVICE}Context : DbContext, IEntityEventLogContext
     {

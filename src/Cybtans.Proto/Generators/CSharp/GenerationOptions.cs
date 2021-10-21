@@ -5,6 +5,8 @@ namespace Cybtans.Proto.Generators.CSharp
 {
     public class GenerationOptions
     {        
+        public bool ClearOutputs { get; set; }
+
         public ModelGeneratorOptions ModelOptions { get; set; }
 
         public ServiceGeneratorOptions ServiceOptions { get; set; }
