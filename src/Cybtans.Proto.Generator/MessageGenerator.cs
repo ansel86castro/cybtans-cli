@@ -587,6 +587,10 @@ namespace Cybtans.Proto.Generator
                     {
                         options.Add($"(default) = \"{str.Replace("\"","\\\"")}\"");
                     }
+                    else if(attr.Default is bool)
+                    {
+                        options.Add($"(default) = {attr.Default.ToString().ToLowerInvariant()}");
+                    }
                     else
                     {
                         options.Add($"(default) = {attr.Default}");

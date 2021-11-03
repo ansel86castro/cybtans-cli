@@ -109,6 +109,8 @@ namespace Cybtans.Proto.Generator
     public class CSharpModelGenerationOption : CSharpStepOption
     {
         public bool UseCytansSerialization { get; set; } = true;
+
+        public bool UseRecords { get; set; }
     }
 
     public class CSharpServiceGenerationOption: CSharpStepOption

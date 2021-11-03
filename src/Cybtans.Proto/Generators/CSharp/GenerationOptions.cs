@@ -22,6 +22,8 @@ namespace Cybtans.Proto.Generators.CSharp
     public class ModelGeneratorOptions: TypeGeneratorOption
     {
         public bool GenerateAccesor { get; set; } = true;
+
+        public bool useRecords { get; set; }
     }
 
     public class ServiceGeneratorOptions: TypeGeneratorOption

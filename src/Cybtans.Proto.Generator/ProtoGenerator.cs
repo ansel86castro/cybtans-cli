@@ -61,7 +61,8 @@ namespace Cybtans.Proto.Generator
                 {
                     OutputPath = Path.Combine(config.Path, step.Models?.Output ?? $"{step.Output}/{config.Service}.Models"),
                     Namespace = step.Models?.Namespace,
-                    GenerateAccesor = step.Models?.UseCytansSerialization ?? true
+                    GenerateAccesor = step.Models?.UseCytansSerialization ?? true,
+                    useRecords = step.Models?.UseRecords ?? false
                 } : null,
 
                 ServiceOptions = ast.HaveServices ? new ServiceGeneratorOptions()

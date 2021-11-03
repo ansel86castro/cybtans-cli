@@ -231,11 +231,15 @@ namespace Cybtans.Proto.Generators.CSharp
                         resolveWriter.Append($"request.{field.GetFieldName()} = context.GetArgument<{field.GetFieldTypeName()}>(\"{field.Name.Camel()}\", default({field.GetFieldTypeName()}));").AppendLine();
                     }
 
+                    resolveWriter.AppendLine();
+                    resolveWriter.Append("using var scope = context.RequestServices.CreateScope();").AppendLine();
+                    resolveWriter.Append("var serviceProvider = scope.ServiceProvider;").AppendLine();
+
                     if (_option.HandleRequest)
                     {
                         resolveWriter
                             .AppendLine()
-                            .Append($"var interceptor = context.RequestServices.GetService<{_option.GetInterceptorType()}>();\r\n")
+                            .Append($"var interceptor = serviceProvider.GetService<{_option.GetInterceptorType()}>();\r\n")
                             .Append("if( interceptor != null )\r\n{\r\n")
                             .Append('\t',1).Append("await interceptor.Handle(request).ConfigureAwait(false);\r\n}")
                             .AppendLine();                                               
@@ -243,10 +247,16 @@ namespace Cybtans.Proto.Generators.CSharp
 
                     resolveWriter.AppendLine();
                 }
+                else
+                {
+                    resolveWriter.AppendLine();
+                    resolveWriter.Append("using var scope = context.RequestServices.CreateScope();").AppendLine();
+                    resolveWriter.Append("var serviceProvider = scope.ServiceProvider;").AppendLine();
+                }
 
                 AddSecurity(service, rpc, resolveWriter);
 
-                resolveWriter.Append($"var service = context.RequestServices.GetRequiredService<{GetServiceName(service)}>();").AppendLine();
+                resolveWriter.Append($"var service = serviceProvider.GetRequiredService<{GetServiceName(service)}>();").AppendLine();
 
                 var arg = !PrimitiveType.Void.Equals(request) ? "request" : "";
                 resolveWriter.Append($"var result = await service.{rpc.Name}({arg}).ConfigureAwait(false);").AppendLine();
@@ -256,7 +266,7 @@ namespace Cybtans.Proto.Generators.CSharp
                     resolveWriter.AppendLine();
 
                     if (!_option.HandleRequest)                    
-                        resolveWriter.Append($"var interceptor = context.RequestServices.GetService<{_option.GetInterceptorType()}>();\r\n");
+                        resolveWriter.Append($"var interceptor = serviceProvider.GetService<{_option.GetInterceptorType()}>();\r\n");
                     
                     resolveWriter.Append("if( interceptor != null )\r\n{\r\n")
                         .Append('\t', 1).Append("await interceptor.HandleResult(result).ConfigureAwait(false);\r\n}")
@@ -281,7 +291,7 @@ namespace Cybtans.Proto.Generators.CSharp
             if (!service.Option.RequiredAuthorization && !rpc.Option.RequiredAuthorization  )
                 return ;
 
-            resolveWriter.Append("var httpContext = context.RequestServices.GetRequiredService<IHttpContextAccessor>().HttpContext;").AppendLine();
+            resolveWriter.Append("var httpContext = serviceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext;").AppendLine();
 
             if (rpc.Option.Authorized || service.Option.Authorized)
             {                
@@ -299,7 +309,7 @@ namespace Cybtans.Proto.Generators.CSharp
             bool authorizationServiceResolved = !string.IsNullOrEmpty(rpc.Option.Policy) || !string.IsNullOrEmpty(service.Option.Policy);
             if (authorizationServiceResolved)
             {                
-                resolveWriter.Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine(); 
+                resolveWriter.Append("var authorizationService = serviceProvider.GetRequiredService<IAuthorizationService>();").AppendLine(); 
                 resolveWriter.Append($"var policyResult = await authorizationService.AuthorizeAsync(httpContext.User, httpContext, \"{rpc.Option.Policy ?? service.Option.Policy}\").ConfigureAwait(false);").AppendLine();                
                 resolveWriter.Append($"if (!policyResult.Succeeded)\r\n{{\r\n\t throw new UnauthorizedAccessException($\"Authorization Failed: {{ string.Join(\", \", policyResult.Failure.FailedRequirements) }}\");\r\n}}").AppendLine();
             }
@@ -311,7 +321,7 @@ namespace Cybtans.Proto.Generators.CSharp
                 if (!authorizationServiceResolved)
                 {
                     authorizationServiceResolved = true;
-                    resolveWriter.Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine();
+                    resolveWriter.Append("var authorizationService = serviceProvider.GetRequiredService<IAuthorizationService>();").AppendLine();
                     resolveWriter.Append("var ");
                 }
                 
@@ -334,7 +344,7 @@ namespace Cybtans.Proto.Generators.CSharp
             resolveWriter.Append("if (result != null)\r\n{\r\n");
             if (!authorizationServiceResolved)
             {
-                resolveWriter.Append('\t',1).Append("var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();").AppendLine();
+                resolveWriter.Append('\t',1).Append("var authorizationService = serviceProvider.GetRequiredService<IAuthorizationService>();").AppendLine();
                 resolveWriter.Append('\t',1).Append("var ");
             }
             else
