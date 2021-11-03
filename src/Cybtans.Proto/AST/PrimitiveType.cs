@@ -96,6 +96,7 @@ namespace Cybtans.Proto.AST
             else if (type == typeof(Dictionary<,>)) return Map;            
             else if (type == typeof(Stream)) return Stream;
 
+            else if (type == typeof(Guid?)) return Guid;
             else if (type == typeof(byte?)) return Int32Value;
             else if (type == typeof(bool?)) return Bool;
             else if (type == typeof(int?)) return Int32Value;

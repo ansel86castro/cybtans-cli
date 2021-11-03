@@ -1,4 +1,5 @@
 ﻿using Cybtans.Proto.Generators;
+using Cybtans.Proto.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace Cybtans.Proto.Generator
     public class ProjectsGenerator : IGenerator
     {
         const string EntityFramework = "ef";
-        const string SDK_VERSION = "1.2.21";
+        const string SDK_VERSION = "2.1.2";
 
         public class Options
         {
@@ -119,8 +120,8 @@ namespace Cybtans.Proto.Generator
             if(options.Template == EntityFramework)
             {
                 GenerateProject("ServicesProject.tpl", options.Output, $"{ options.Name }.Data", GetReferences(ProjectType.Data, options), GetPackages(ProjectType.Data, options));
-                GenerateProject("ServicesProject.tpl", options.Output, $"{ options.Name }.Data.EntityFramework", GetReferences(ProjectType.DataEF, options), GetPackages(ProjectType.DataEF, options));
-                File.WriteAllText($"{options.Output}/{ options.Name }.Data.EntityFramework/{ options.Name }Context.cs", GetTemplate("DbContext.tpl", new
+                GenerateProject("ServicesProject.tpl", options.Output, $"{ options.Name }.Data.Repositories", GetReferences(ProjectType.DataEF, options), GetPackages(ProjectType.DataEF, options));
+                File.WriteAllText($"{options.Output}/{ options.Name }.Data.Repositories/{ options.Name }Context.cs", GetTemplate("DbContext.tpl", new
                 {
                     SERVICE = options.Name
                 }));
@@ -132,7 +133,7 @@ namespace Cybtans.Proto.Generator
             Directory.CreateDirectory($"{options.Output}/Proto");
             File.WriteAllText($"{options.Output}/Proto/{options.Name}.proto", GetTemplate("Proto.tpl", new
             {
-                SERVICE = options.Name
+                SERVICE = options.Name.Replace(".", "").Pascal()
             }));
 
             File.WriteAllText($"{options.Output}/cybtans.json", GetTemplate("cybtans.tpl", new
@@ -148,14 +149,22 @@ namespace Cybtans.Proto.Generator
                 Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.Services.Tests/{ options.Name }.Services.Tests.csproj").WaitForExit();
                 Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.Models/{ options.Name }.Models.csproj").WaitForExit();
                 Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.Clients/{ options.Name }.Clients.csproj").WaitForExit();
-                Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.RestApi/{ options.Name }.RestApi.csproj").WaitForExit();
+                Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.WebApi/{ options.Name }.WebApi.csproj").WaitForExit();
 
                 if (options.Template == EntityFramework)
                 {
                     Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.Data/{ options.Name }.Data.csproj").WaitForExit();
-                    Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.Data.EntityFramework/{ options.Name }.Data.EntityFramework.csproj").WaitForExit();
-                }
+                    Process.Start("dotnet", $"sln {options.Solution} add -s { options.Name } {options.Output}/{ options.Name }.Data.Repositories/{ options.Name }.Data.Repositories.csproj").WaitForExit();
+                }      
             }
+            
+            File.WriteAllText($"{options.Output}/{ options.Name }.Services/{ options.Name }Service.cs", GetTemplate("Service.tpl", new
+            {
+                SERVICE = options.Name
+            }));
+
+            Process.Start("dotnet", $"build {options.Output}/{ options.Name }.Data").WaitForExit();
+            Process.Start("cybtans-cli", $"{options.Output}").WaitForExit();
 
             Console.WriteLine("Generation Completed");
         }
@@ -171,7 +180,7 @@ namespace Cybtans.Proto.Generator
                     if (options.Template == EntityFramework)
                     {
                         references.Add($"{ options.Name }.Data");
-                        references.Add($"{ options.Name }.Data.EntityFramework");
+                        references.Add($"{ options.Name }.Data.Repositories");
                     }
                     break;
                 case ProjectType.WebAPI:
@@ -179,7 +188,7 @@ namespace Cybtans.Proto.Generator
                     if (options.Template == EntityFramework)
                     {
                         references.Add($"{ options.Name }.Data");
-                        references.Add($"{ options.Name }.Data.EntityFramework");
+                        references.Add($"{ options.Name }.Data.Repositories");
                     }
                     break;
                 case ProjectType.DataEF:
@@ -207,10 +216,8 @@ namespace Cybtans.Proto.Generator
                                 $"<PackageReference Include=\"Cybtans.Entities\" Version=\"{SDK_VERSION}\" />",
                                 $"<PackageReference Include=\"Cybtans.Services\" Version=\"{SDK_VERSION}\" />",
                                 $"<PackageReference Include=\"Cybtans.Messaging\" Version=\"{SDK_VERSION}\" />",
-                                $"<PackageReference Include=\"Cybtans.Entities.EventLog\" Version=\"{SDK_VERSION}\" />",
-                                "<PackageReference Include=\"AutoMapper\" Version=\"10.0.11\" />",
-                                "<PackageReference Include=\"Microsoft.Extensions.Logging.Abstractions\" Version=\"5.0.0\" />",
-                                "<PackageReference Include=\"FluentValidation\" Version=\"10.1.0\" />"
+                                $"<PackageReference Include=\"Cybtans.Entities.EventLog\" Version=\"{SDK_VERSION}\" />",                                
+                                "<PackageReference Include=\"Microsoft.Extensions.Logging.Abstractions\" Version=\"5.0.0\" />",                                
                             });
                     }
                     break;
@@ -218,21 +225,21 @@ namespace Cybtans.Proto.Generator
                     packages.AddRange(new[]
                     {
                             $"<PackageReference Include=\"Cybtans.Entities\" Version=\"{SDK_VERSION}\" />",
-                            $"<PackageReference Include=\"Cybtans.Entities.Proto\" Version=\"1.2.1\" />"
+                            $"<PackageReference Include=\"Cybtans.Entities.Proto\" Version=\"1.2.3\" />"
                         });
                     break;
                 case ProjectType.DataEF:
                     packages.AddRange(new[]
                     {
-                            "<PackageReference Include=\"Microsoft.EntityFrameworkCore\" Version=\"5.0.6\" />",
+                            "<PackageReference Include=\"Microsoft.EntityFrameworkCore\" Version=\"5.0.9\" />",
                             $"<PackageReference Include=\"Cybtans.Entities.EntityFrameworkCore\" Version=\"{SDK_VERSION}\" />",
                         });
                     break;
                 case ProjectType.WebAPI:
                     packages.AddRange(new[]
                     {                        
-                        "<PackageReference Include=\"Swashbuckle.AspNetCore\" Version=\"5.5.1\" />",
-                        "<PackageReference Include=\"Swashbuckle.AspNetCore.ReDoc\" Version=\"5.5.1\" />",
+                        "<PackageReference Include=\"Swashbuckle.AspNetCore\" Version=\"6.2.1\" />",
+                        "<PackageReference Include=\"Swashbuckle.AspNetCore.ReDoc\" Version=\"6.2.1\" />",
                         "<PackageReference Include=\"Microsoft.AspNetCore.Authentication.JwtBearer\" Version=\"3.1.7\" />",
                         "<PackageReference Include=\"Serilog.AspNetCore\" Version=\"3.4.0\" />",
                         $"<PackageReference Include=\"Cybtans.AspNetCore\" Version=\"{SDK_VERSION}\" />"
@@ -242,12 +249,9 @@ namespace Cybtans.Proto.Generator
                     {
                         packages.AddRange(new[]
                         {
-                                $"<PackageReference Include=\"Cybtans.Entities.EntityFrameworkCore\" Version=\"{SDK_VERSION}\" />",
-                                $"<PackageReference Include=\"Cybtans.Messaging.RabbitMQ\" Version=\"{SDK_VERSION}\" />",
-                                $"<PackageReference Include=\"Cybtans.Services\" Version=\"{SDK_VERSION}\" /> ",
-                                "<PackageReference Include=\"AutoMapper.Extensions.Microsoft.DependencyInjection\" Version=\"8.1.11\" />",
-                                "<PackageReference Include=\"FluentValidation.AspNetCore\" Version=\"10.1.0\" />",
-                                "<PackageReference Include=\"Microsoft.EntityFrameworkCore.SqlServer\" Version=\"5.0.6\" />"
+                                $"<PackageReference Include=\"Cybtans.Entities.EntityFrameworkCore\" Version=\"{SDK_VERSION}\" />",                                
+                                $"<PackageReference Include=\"Cybtans.Services\" Version=\"{SDK_VERSION}\" /> ",                                                                
+                                "<PackageReference Include=\"Microsoft.EntityFrameworkCore.SqlServer\" Version=\"5.0.9\" />"
                             });
                     }
                     break;
@@ -280,33 +284,33 @@ namespace Cybtans.Proto.Generator
 
         private  void GenerateWebApi(Options options)
         {
-            GenerateProject("WebAPI.tpl", options.Output, $"{ options.Name }.RestApi", GetReferences(ProjectType.WebAPI, options), GetPackages(ProjectType.WebAPI, options));
+            GenerateProject("WebAPI.tpl", options.Output, $"{ options.Name }.WebApi", GetReferences(ProjectType.WebAPI, options), GetPackages(ProjectType.WebAPI, options));
 
-            Directory.CreateDirectory($"{options.Output}/{options.Name}.RestApi/Properties");
-            Directory.CreateDirectory($"{options.Output}/{options.Name}.RestApi/Controllers");
+            Directory.CreateDirectory($"{options.Output}/{options.Name}.WebApi/Properties");
+            Directory.CreateDirectory($"{options.Output}/{options.Name}.WebApi/Controllers");
 
-            File.WriteAllText($"{options.Output}/{options.Name}.RestApi/appsettings.Development.json", GetTemplate("WebAPI.appsettings.Development.tpl", new 
+            File.WriteAllText($"{options.Output}/{options.Name}.WebApi/appsettings.Development.json", GetTemplate("WebAPI.appsettings.Development.tpl", new 
             {
                 SERVICE = options.Name
             }));
-            File.WriteAllText($"{options.Output}/{options.Name}.RestApi/appsettings.json", GetTemplate("WebAPI.appsettings.tpl", new 
+            File.WriteAllText($"{options.Output}/{options.Name}.WebApi/appsettings.json", GetTemplate("WebAPI.appsettings.tpl", new 
             {
                 SERVICE = options.Name
             }));
 
-            File.WriteAllText($"{options.Output}/{options.Name}.RestApi/Properties/launchSettings.json", GetTemplate("WebAPI.launchSettings.tpl", new
+            File.WriteAllText($"{options.Output}/{options.Name}.WebApi/Properties/launchSettings.json", GetTemplate("WebAPI.launchSettings.tpl", new
             {
-                PROJECT = $"{options.Name}.RestApi"
+                PROJECT = $"{options.Name}.WebApi"
             }));
 
-            File.WriteAllText($"{options.Output}/{options.Name}.RestApi/Program.cs", GetTemplate("WebAPI.Program.tpl", new
+            File.WriteAllText($"{options.Output}/{options.Name}.WebApi/Program.cs", GetTemplate("WebAPI.Program.tpl", new
             {
-                NAMESPACE = $"{options.Name}.RestApi",
+                NAMESPACE = $"{options.Name}.WebApi",
                 SERVICE = options.Name
             }));
-            File.WriteAllText($"{options.Output}/{options.Name}.RestApi/Startup.cs", GetTemplate("WebAPI.Startup.tpl", new
+            File.WriteAllText($"{options.Output}/{options.Name}.WebApi/Startup.cs", GetTemplate("WebAPI.Startup.tpl", new
             {
-                NAMESPACE = $"{options.Name}.RestApi",
+                NAMESPACE = $"{options.Name}.WebApi",
                 SERVICE = options.Name
         }));
         }

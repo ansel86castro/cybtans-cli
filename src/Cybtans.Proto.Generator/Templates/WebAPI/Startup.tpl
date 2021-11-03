@@ -11,15 +11,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using AutoMapper;
-using FluentValidation.AspNetCore;
 using Cybtans.AspNetCore;
 using Cybtans.Entities.EntityFrameworkCore;
 using Cybtans.Services.Extensions;
-
-using @{SERVICE}.Domain.EntityFramework;
+using @{SERVICE}.Data;
+using @{SERVICE}.Data.Repositories;
 using @{SERVICE}.Services;
-using @{SERVICE}.Domain;
 
 namespace @{NAMESPACE}
 {
@@ -41,44 +38,64 @@ namespace @{NAMESPACE}
             AddAuthentication(services);
 
             #region Cors
-
-            services.AddCors(options =>
-            {
-                options.AddDefaultPolicy(
-                    builder =>
-                    {
-                       builder.SetIsOriginAllowedToAllowWildcardSubdomains()
-                        .WithOrigins("*")
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .WithExposedHeaders("Content-Type", "Content-Disposition")
-                        .AllowCredentials();
-                    });
-            });
-
-            #endregion
-
-            #region DAL
-            services.AddDbContext<@{SERVICE}Context>(
-                builder => builder.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
-            services
-            .AddUnitOfWork<@{SERVICE}Context>()
-            .AddRepositories();
-
-            #endregion            
+            services.AddCors(options =>            
+            options.AddDefaultPolicy(
+                builder =>
+                {
+                    builder.SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .WithOrigins(Configuration.GetValue<string>("CorsOrigins").Split(','))
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .WithExposedHeaders("Content-Type", "Content-Disposition")
+                    //.AllowCredentials()
+                    ;
+                }));
+            #endregion                 
          
+            #region Controllers 
             services
-            .AddControllers(options => options.Filters.Add<HttpResponseExceptionFilter>())
-            .AddFluentValidation(options => options.RegisterValidatorsFromAssemblyContaining(typeof(@{SERVICE}Stub)))
-            .AddCybtansFormatter();  
+            .AddControllers(options => 
+            {
+                options.Filters.Add<HttpResponseExceptionFilter>();
+            })            
+            // Uncomment to enable cybtans binary formatting
+            //.AddCybtansFormatter()
+            ;  
+            #endregion            
+            
+            #region App Services    
+            //services.AddAutoMapper(typeof(@{SERVICE}Stub));
 
-            #region AppServices
-
-            services.AddAutoMapper(typeof(@{SERVICE}Stub));
             services.AddCybtansServices(typeof(@{SERVICE}Stub).Assembly);         
-
             #endregion
+
+            //#region Data Access 
+            //services.AddDbContext<@{SERVICE}Context>(builder => builder.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            //services.AddUnitOfWork<@{SERVICE}Context>().AddRepositories();
+            //#endregion
+            
+            //#region Validations
+            //services.AddDefaultValidatorProvider(p => p.AddValidatorFromAssembly(typeof(AgentsStub).Assembly));
+            //services.AddSingleton<IMessageInterceptor, MyMessageInterceptor>();
+            //#endregion
+
+
+            //#region Messaging                                 
+            //services.AddRabbitMessageQueue(Configuration)
+            // .ConfigureSubscriptions(sm =>
+            // {
+            //     sm.SubscribeHandlerForEvents<TMessage, THandler>("Test");
+            //     sm.SubscribeForEvents<TEntityEvent, TEntity>("Test");
+            // });
+            //
+            //services.AddAccessTokenManager(Configuration);
+            //services.AddRabbitBroadCastService(Configuration.GetSection("BroadCastOptions").Get<BroadcastServiceOptions>());
+            //#endregion
+
+           //#region Caching
+           //services.AddRedisCache(o => o.Connection = "localhost");
+           //services.AddDistributedLockProvider();
+           //#endregion
         }
         
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -96,27 +113,7 @@ namespace @{NAMESPACE}
 
             app.UseCors();
 
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "@{SERVICE} V1");
-                c.EnableFilter();
-                c.EnableDeepLinking();
-                c.ShowCommonExtensions();  
-                
-                c.OAuthClientId("swagger");
-                c.OAuthClientSecret(Configuration.GetValue<string>("Identity:Secret"));
-                c.OAuthAppName("@{SERVICE}");
-                c.OAuthUsePkce();
-            });
-            
-             app.UseReDoc(c =>
-            {
-                c.RoutePrefix = "docs";
-                c.SpecUrl("/swagger/v1/swagger.json");
-                c.DocumentTitle = "@{SERVICE} API";
-            });
-
+            UseSwagger(app);
 
             app.UseHttpsRedirection();
 
@@ -130,6 +127,8 @@ namespace @{NAMESPACE}
                 endpoints.MapControllers();
             });
         }
+
+        #region Private
 
         void AddSwagger(IServiceCollection services)
         {
@@ -213,5 +212,31 @@ namespace @{NAMESPACE}
 
             services.AddAuthorization();
 		}
+    
+        void UseSwagger(IApplicationBuilder app)
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "@{SERVICE} V1");
+                c.EnableFilter();
+                c.EnableDeepLinking();
+                c.ShowCommonExtensions();  
+                
+                c.OAuthClientId("swagger");
+                c.OAuthClientSecret(Configuration.GetValue<string>("Identity:Secret"));
+                c.OAuthAppName("@{SERVICE}");
+                c.OAuthUsePkce();
+            });
+            
+            app.UseReDoc(c =>
+            {
+                c.RoutePrefix = "docs";
+                c.SpecUrl("/swagger/v1/swagger.json");
+                c.DocumentTitle = "@{SERVICE} API";
+            });
+        }
+
+        #endregion
     }
 }

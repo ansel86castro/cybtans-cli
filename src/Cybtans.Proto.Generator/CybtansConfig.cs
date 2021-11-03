@@ -53,6 +53,8 @@ namespace Cybtans.Proto.Generator
 
         public string SearchPath { get; set; }
 
+        public bool ClearOutput { get; set; } = true;
+
         public StepClientOptions Typecript { get; set; }        
 
         public CSharpModelGenerationOption Models { get; set; }
@@ -82,6 +84,9 @@ namespace Cybtans.Proto.Generator
 
         public string AutoMapperOutput { get; set; }
 
+        public bool GenerateMappings { get; set; }
+        public bool GenerateAutoMapperProfile { get; set; }
+
         #endregion
     }
 
@@ -104,6 +109,8 @@ namespace Cybtans.Proto.Generator
     public class CSharpModelGenerationOption : CSharpStepOption
     {
         public bool UseCytansSerialization { get; set; } = true;
+
+        public bool UseRecords { get; set; }
     }
 
     public class CSharpServiceGenerationOption: CSharpStepOption

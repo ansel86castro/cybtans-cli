@@ -21,6 +21,8 @@ namespace Cybtans.Proto.Generators.CSharp
                 return;
 
             base.GenerateCode();
+
+
         }
 
         public override void OnGenerationBegin(CsFileWriter writer)
@@ -48,7 +50,7 @@ namespace Cybtans.Proto.Generators.CSharp
         }
 
         protected override void SaveFile(CsFileWriter writer)
-        {
+        {            
             writer.Save("Enums");
         }
 

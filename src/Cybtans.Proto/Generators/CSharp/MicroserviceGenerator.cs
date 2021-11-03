@@ -3,6 +3,7 @@ using Cybtans.Proto.Utils;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Text;
 
 namespace Cybtans.Proto.Generators.CSharp
@@ -20,6 +21,11 @@ namespace Cybtans.Proto.Generators.CSharp
 
         public void GenerateCode(ProtoFile proto, Scope? scope = null)
         {
+            if (_options.ClearOutputs)
+            {
+                ClearOutputFiles();
+            }
+
             var protos = TopologicalSort.Sort(new[] { proto }, x => x.ImportedFiles);
 
             if (_options.ModelOptions == null)
@@ -78,6 +84,35 @@ namespace Cybtans.Proto.Generators.CSharp
                     }
                 }            
                
+            }
+        }
+  
+        private void ClearOutputFiles()
+        {
+            ClearOutput(_options.ModelOptions);
+            ClearOutput(_options.ServiceOptions);
+            ClearOutput(_options.ClientOptions);
+            ClearOutput(_options.ControllerOptions);
+            ClearOutput(_options.ApiGatewayOptions);            
+        }
+
+        private void ClearOutput(CodeGenerationOption option)
+        {
+            if (option == null || string.IsNullOrEmpty(option.OutputPath))
+                return;
+
+            if (Directory.Exists(option.OutputPath))
+            {
+                DeleteFiles(new DirectoryInfo(option.OutputPath), ".cs");                
+            }
+        }
+
+        private void DeleteFiles(DirectoryInfo di ,string ext)
+        {
+            var files = di.GetFiles($"*{ext}");
+            foreach (var file in files)
+            {
+                file.Delete();
             }
         }
     }

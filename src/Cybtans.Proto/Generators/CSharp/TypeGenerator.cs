@@ -104,7 +104,14 @@ namespace Cybtans.Proto.Generators.CSharp
                 clsWriter.Append("partial ");
             }
 
-            clsWriter.Append($"class {info.Name} ");
+            if (_option.useRecords)
+            {
+                clsWriter.Append($"record {info.Name} ");
+            }
+            else
+            {
+                clsWriter.Append($"class {info.Name} ");
+            }
 
             if (msg.Option.Base != null)
             {
@@ -186,6 +193,10 @@ namespace Cybtans.Proto.Generators.CSharp
                     if (field.Option.Default is string)
                     {
                         bodyWriter.Append("\"").Append(field.Option.Default.ToString()).Append("\"").Append(";");
+                    }
+                    else if (field.Option.Default is bool)
+                    {
+                        bodyWriter.Append(field.Option.Default.ToString()?.ToLowerInvariant()).Append(";");
                     }
                     else 
                     { 

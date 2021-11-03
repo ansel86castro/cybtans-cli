@@ -2,6 +2,7 @@
 using Cybtans.Proto.AST;
 using Cybtans.Proto.Generators;
 using Cybtans.Proto.Generators.CSharp;
+using Cybtans.Proto.Options;
 using Cybtans.Proto.Utils;
 using System;
 using System.Collections.Generic;
@@ -41,6 +42,9 @@ namespace Cybtans.Proto.Generator
 
             public string AutoMapperOutput { get; set; }
 
+            public string Namespace { get; set; }
+            public bool GenerateMapping { get; set; }
+
             public bool IsValid()
             {
                 return !string.IsNullOrEmpty(AssemblyFilename)
@@ -66,6 +70,27 @@ namespace Cybtans.Proto.Generator
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
                 return Path.Combine(path, "GeneratedAutoMapperProfile.cs");
+            }
+
+            public string GetModelMappingOutputDirectory( )
+            {
+                string path;
+                if (AutoMapperOutput != null)
+                {
+                    path = AutoMapperOutput;
+                }
+                else if (ServiceName != null && ServiceDirectory != null)
+                {
+                    path = Path.Combine(ServiceDirectory, $"{ServiceName}.Services", "Generated", "Mappings");
+                }
+                else
+                {
+                    return null;
+                }
+
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+                return path;
             }
 
             public string GetServiceImplOutputPath()
@@ -144,13 +169,49 @@ namespace Cybtans.Proto.Generator
             GenerateProto(options);
 
             return true;
+        }      
+
+        public bool Generate(CybtansConfig config, GenerationStep step)
+        {
+            if (!CanGenerate(step.Type))
+                return false;
+
+            var protoStep = config.Steps.FirstOrDefault(x => x.Type == "proto");
+
+            var options = new GenerationOptions()
+            {
+                ProtoOutputFilename = Path.Combine(config.Path, step.ProtoFile),
+                AssemblyFilename = Path.Combine(config.Path, step.AssemblyFile),
+                Imports = step.Imports,
+                ServiceName = config.Service,
+                ServiceDirectory = step.Output != null ? Path.Combine(config.Path, step.Output) : null,
+                Grpc = step.Grpc,
+                NameTemplate = step.NameTemplate,
+                GenerateGraphQl = step.GenerateGraphQLQuery,
+                Namespace = protoStep?.Models?.Namespace ?? $"{config.Service}.Models",
+                GenerateMapping = step.GenerateMappings,
+                GenerateAutoMapperProfile = step.GenerateAutoMapperProfile
+            };
+
+            if (step.AutoMapperOutput != null)
+            {
+                options.AutoMapperOutput = Path.Combine(config.Path, step.AutoMapperOutput);
+            }
+
+            if (options.Grpc.MappingOutput != null)
+            {
+                options.Grpc.MappingOutput = Path.Combine(config.Path, options.Grpc.MappingOutput);
+            }
+            
+            GenerateProto(options);
+
+            return true;
         }
 
         private void GenerateProto(GenerationOptions options)
         {
-           
             Console.WriteLine($"Generating proto from {options.AssemblyFilename}");
-         
+
             using var loader = new Cybtans.Proto.Utils.AssemblyLoader(options.AssemblyFilename);
             var exportedTypes = loader.LoadTypes();
             var types = GenerateMessages(options, exportedTypes);
@@ -168,9 +229,13 @@ namespace Cybtans.Proto.Generator
                 //    "-o", options.ServiceDirectory,
                 //    "-f",  options.ProtoOutputFilename });
 
-                if (options.AutoMapperOutput != null || (options.ServiceName != null && options.ServiceDirectory != null))
+                if (!options.GenerateMapping && (options.AutoMapperOutput != null || (options.ServiceName != null && options.ServiceDirectory != null)))
                 {
                     GenerateMappings(types, options);
+                }
+                else if (options.GenerateMapping && options.Namespace != null)
+                {
+                    GenerateModelMapping(types, options);
                 }
 
                 if (options.GenerateCode && options.ServiceName != null && options.ServiceDirectory != null)
@@ -178,38 +243,6 @@ namespace Cybtans.Proto.Generator
                     GenerateServicesImplementation(types, options);
                 }
             }
-        }
-
-        public bool Generate(CybtansConfig config, GenerationStep step)
-        {
-            if (!CanGenerate(step.Type))
-                return false;
-
-            var options = new GenerationOptions()
-            {
-                ProtoOutputFilename = Path.Combine(config.Path, step.ProtoFile),
-                AssemblyFilename = Path.Combine(config.Path, step.AssemblyFile),
-                Imports = step.Imports,
-                ServiceName = config.Service,
-                ServiceDirectory = step.Output != null ?  Path.Combine(config.Path, step.Output) : null,
-                Grpc = step.Grpc,
-                NameTemplate = step.NameTemplate,
-                GenerateGraphQl = step.GenerateGraphQLQuery               
-            };
-
-            if (step.AutoMapperOutput != null)
-            {
-                options.AutoMapperOutput = Path.Combine(config.Path, step.AutoMapperOutput);
-            }
-
-            if (options.Grpc.MappingOutput != null)
-            {
-                options.Grpc.MappingOutput = Path.Combine(config.Path, options.Grpc.MappingOutput);
-            }
-            
-            GenerateProto(options);
-
-            return true;
         }
 
         public void PrintHelp()
@@ -402,7 +435,7 @@ namespace Cybtans.Proto.Generator
             if (type.GetCustomAttribute<DescriptionAttribute>() != null)
             {
                 var description = type.GetCustomAttribute<DescriptionAttribute>();
-                codeWriter.Append('\t', 1).Append($"option (description) = \"{description.Description}\";").AppendLine();
+                codeWriter.Append('\t', 1).Append($"option (message_description) = \"{description.Description}\";").AppendLine();
                 hasMessageOptions = true;
             }
 
@@ -426,7 +459,7 @@ namespace Cybtans.Proto.Generator
                 if (p.GetCustomAttribute<MessageExcludedAttribute>() != null ||
                     p.DeclaringType.FullName.StartsWith("Cybtans.Entities.DomainTenantEntity") ||
                     p.DeclaringType.FullName.StartsWith("Cybtans.Entities.TenantEntity"))
-                    continue;                
+                    continue;
 
                 if (p.DeclaringType.FullName.StartsWith("Cybtans.Entities.DomainAuditableEntity") ||
                     p.DeclaringType.FullName.StartsWith("Cybtans.Entities.AuditableEntity"))
@@ -443,7 +476,7 @@ namespace Cybtans.Proto.Generator
                     propertyType = propertyType.GetElementType();
                     repeated = true;
                 }
-                else if (propertyType.IsGenericType && typeof(ICollection<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition()))
+                else if (IsCollection(propertyType))
                 {
                     propertyType = propertyType.GetGenericArguments()[0];
                     repeated = true;
@@ -502,6 +535,16 @@ namespace Cybtans.Proto.Generator
             }
         }
 
+        private static bool IsCollection(Type type)
+        {
+            if(type.IsGenericType)
+            {
+                var genDef = type.GetGenericTypeDefinition();
+                return genDef == typeof(ICollection<>) || genDef == typeof(List<>) || genDef == typeof(HashSet<>);
+            }
+            return false;
+        }
+
         private static void AppendOptions(CodeWriter codeWriter, PropertyInfo p, bool optional)
         {
             var options = new List<string>();
@@ -519,13 +562,41 @@ namespace Cybtans.Proto.Generator
             if (p.GetCustomAttribute<DescriptionAttribute>() != null)
             {
                 var attr = p.GetCustomAttribute<DescriptionAttribute>();
-                options.Add($"(description) = \"{attr.Description}\"");
+                options.Add($"(field_description) = \"{attr.Description}\"");
             }
 
             if (p.GetCustomAttribute<ObsoleteAttribute>() != null)
             {
                 options.Add("(deprecated) = true");
-            }         
+            }
+            
+            if(p.GetCustomAttribute<ProtoFieldAttribute>() != null)
+            {
+                var attr = p.GetCustomAttribute<ProtoFieldAttribute>();
+                if (attr.TsOptional)
+                {
+                    options.Add("(ts).optional = true");
+                }
+                if (attr.TsPartial)
+                {
+                    options.Add("(ts).partial = true");
+                }
+                if(attr.Default != null)
+                {
+                    if(attr.Default is string str)
+                    {
+                        options.Add($"(default) = \"{str.Replace("\"","\\\"")}\"");
+                    }
+                    else if(attr.Default is bool)
+                    {
+                        options.Add($"(default) = {attr.Default.ToString().ToLowerInvariant()}");
+                    }
+                    else
+                    {
+                        options.Add($"(default) = {attr.Default}");
+                    }
+                }
+            }
 
             if (options.Any())
             {
@@ -967,10 +1038,14 @@ namespace Cybtans.Proto.Generator
                 elementType = propertyType.GetElementType();
                 repeated = true;
             }
-            else if (propertyType.IsGenericType && typeof(ICollection<>).IsAssignableFrom(propertyType.GetGenericTypeDefinition()))
+            else if (propertyType.IsGenericType)
             {
-                elementType = propertyType.GetGenericArguments()[0];
-                repeated = true;
+                if (IsCollection(propertyType))
+                {
+                    elementType = propertyType.GetGenericArguments()[0];
+                    repeated = true;
+                }
+            
             }
 
             return repeated;
@@ -1029,15 +1104,14 @@ message GetAllRequest {
                 if (!type.IsClass)
                     continue;
 
-                writer.AppendLine();
-                writer.Append($"CreateMap<{type.Name}, {GetTypeName(type, options)}>();").AppendLine();
-                writer.Append($"CreateMap<{GetTypeName(type, options)},{type.Name}>();").AppendLine();
+                writer.AppendLine();                
+                writer.Append($"CreateMap<global::{type.FullName}, {GetTypeName(type, options)}>();").AppendLine();
+                writer.Append($"CreateMap<{GetTypeName(type, options)}, global::{type.FullName}>();").AppendLine();
             }
 
             File.WriteAllText(options.GetMappingOutputPath(), 
             TemplateProcessor.Process(MappingTemplate, new
-            {
-                ENTITIES_NAMESPACE = ns,
+            {                
                 SERVICE = options.ServiceName,
                 MAPPINGS = writer.ToString()
             }));
@@ -1083,6 +1157,173 @@ message GetAllRequest {
             }
         }
 
+        public void GenerateModelMapping(HashSet<Type> types, GenerationOptions generationOptions)
+        {           
+            var writer = new CsFileWriter(generationOptions.ServiceName, generationOptions.GetModelMappingOutputDirectory());
+
+            writer.Usings.Append("using System;").AppendLine();
+            writer.Usings.Append("using System.Collections.Generic;").AppendLine();
+            writer.Usings.Append("using System.Linq;").AppendLine();
+
+            var clsWriter = writer.Class;
+
+            clsWriter.Append("public static class ModelMappingExtensions").AppendLine().Append("{").AppendLine();
+            clsWriter.Append('\t', 1);
+
+            var bodyWriter = clsWriter.Block("BODY");
+
+            foreach (var type in types)
+            {
+                if (type.IsClass && !type.IsAbstract)
+                {
+                    GenerateModelMapping(type, bodyWriter, generationOptions, true);
+
+                    GenerateModelMapping(type, bodyWriter, generationOptions, false);
+                }
+            }
+
+            clsWriter.Append("}").AppendLine();
+
+            writer.Save("ModelMappingExtensions");
+
+        }
+
+        private void GenerateModelMapping(Type type, CodeWriter writer, GenerationOptions generationOptions, bool toData)
+        {
+            var dataType = type.FullName;
+            var modelType = $"{generationOptions.Namespace}.{GetMessageName(type, generationOptions.NameTemplate)}";
+
+            var srcTypeName = toData ? modelType : dataType;
+            var destTypeName = toData ? dataType : modelType;
+
+            CodeWriter bodyWriter;
+            if (toData)
+            {
+                writer.Append($"public static global::{destTypeName} ToDataModel(this global::{srcTypeName} model)")
+                   .AppendLine().Append("{").AppendLine().Append('\t', 1);
+
+                bodyWriter = writer.Block($"ToDataModel_{type.Name}_BODY");
+            }
+            else
+            {
+                writer.Append($"public static global::{destTypeName} ToServiceModel(this global::{srcTypeName} model)")
+                    .AppendLine().Append("{").AppendLine().Append('\t', 1);
+
+                bodyWriter = writer.Block($"ToServiceModel_{type.Name}_BODY");
+
+            }
+
+            bodyWriter.Append($"if(model == null) return null;").AppendLine(2);
+            bodyWriter.Append($"var result = new global::{destTypeName}();").AppendLine();
+
+            foreach (var field in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+             
+                if (field.GetCustomAttribute<MessageExcludedAttribute>() != null ||
+                   field.DeclaringType.FullName.StartsWith("Cybtans.Entities.DomainTenantEntity") ||
+                   field.DeclaringType.FullName.StartsWith("Cybtans.Entities.TenantEntity"))
+                    continue;
+
+                if (field.DeclaringType.FullName.StartsWith("Cybtans.Entities.DomainAuditableEntity") ||
+                    field.DeclaringType.FullName.StartsWith("Cybtans.Entities.AuditableEntity"))
+                {
+                    if (field.Name == "Creator")
+                        continue;
+                }
+
+                if(toData && !field.CanWrite)
+                {
+                    continue;
+                }
+
+                var fieldName = toData ? field.Name: field.Name.Pascal();
+                var modelName = toData ? field.Name.Pascal() : field.Name;
+                var fieldType = field.PropertyType;
+
+
+                if (IsArray(fieldType, out var elementType))
+                {
+                    if (!IsGenerated(elementType))
+                        continue;
+
+                    var selector = GetFieldPath("x", elementType, generationOptions, toData);
+                    
+                    bodyWriter.Append($"if(model.{fieldName} != null) ");                  
+                    if (selector == "x")
+                    {
+                        if (toData)
+                        {
+                            bodyWriter.Append($"result.{fieldName} = model.{modelName};").AppendLine();
+                        }
+                        else
+                        {
+                            bodyWriter.Append($"result.{fieldName} = new List<{elementType}>(model.{modelName});").AppendLine();
+                        }
+                    }
+                    else
+                    {                        
+                        bodyWriter.Append($"result.{fieldName} = model.{modelName}.Select(x => {selector}).ToList();").AppendLine();
+                    }                    
+                }
+                else
+                {
+                    if (!IsGenerated(fieldType))
+                        continue;
+
+                    var path = GetFieldPath($"model.{modelName}", fieldType, generationOptions, toData);
+                    bodyWriter.Append($"result.{fieldName} = {path};").AppendLine();
+                }
+            }
+
+            bodyWriter.Append("return result;").AppendLine();
+
+            writer.Append("}").AppendLine(2);
+        }
+
+        private string GetFieldPath(string fieldName, Type type, GenerationOptions options, bool toData)
+        {            
+            if (type.IsClass && type != typeof(string))
+            {
+                return toData? $"ToDataModel({fieldName})" : $"ToServiceModel({fieldName})";
+            }
+            else if (type.IsEnum)
+            {
+                if (toData)
+                {                    
+                    return $"(global::{type.FullName})(int){fieldName}";
+                }
+                else
+                {
+                    var typeName = $"global::{options.Namespace}.{type.Name}";
+                    return $"({typeName})(int){fieldName}";
+                }
+                
+            }
+            else if (type.IsPrimitive)
+            {                
+                return fieldName;
+            }
+            else
+            {
+                type = Nullable.GetUnderlyingType(type);
+                if (type != null && type.IsEnum)
+                {
+                    if (toData)
+                    {
+                        return $"({fieldName} != null ? new {type.FullName} ? (({type.FullName}){fieldName}.Value) : ({type.FullName}?)null )";                       
+                    }
+                    else
+                    {
+                        var modelTypeName = $"global::{options.Namespace}.{type.Name}";
+                        return $"({fieldName} != null ? new {modelTypeName} ? (({modelTypeName}){fieldName}.Value) : ({modelTypeName}?)null )";
+                    }
+                }
+
+                return fieldName;
+            }
+        }
+
+
         private void GenerateRestApiRegisterExtensor(HashSet<Type> types, GenerationOptions options)
         {
             CodeWriter writer = new CodeWriter();
@@ -1108,7 +1349,6 @@ message GetAllRequest {
         const string MappingTemplate = @"
 using System;
 using AutoMapper;
-using @{ ENTITIES_NAMESPACE };
 using @{ SERVICE }.Models;
 
 namespace @{ SERVICE }.Services

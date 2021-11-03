@@ -52,7 +52,9 @@ extend google.protobuf.FieldOptions {
 
 message TypescriptOptions{
 	//Generates the message as Partial<TMessage> in Typescript
-	bool partial = 643001;
+	bool partial = 649001;
+
+	bool optional = 649002;
 }
 
 extend google.protobuf.MessageOptions {
